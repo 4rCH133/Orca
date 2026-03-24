@@ -5,18 +5,22 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        reddit: {
-          orange: '#FF4500',
-          blue: '#0079D3',
-          green: '#46D160',
-          red: '#FF585B',
-        },
-        surface: {
-          DEFAULT: '#FFFFFF',
-          dark: '#1A1A1B',
-          elevated: '#F6F7F8',
-          'elevated-dark': '#272729',
-        },
+        // Orca design system
+        base: '#000000',
+        surface: '#0D0D0E',
+        elevated: '#161617',
+        input: '#1A1A1B',
+        subtle: '#1E1E1F',
+        border: '#2A2A2B',
+        // Text
+        primary: '#F0F0F0',
+        secondary: '#A8A8A8',
+        muted: '#5A5A5C',
+        // Accent
+        orange: '#FF4500',
+        blue: '#7193FF',
+        green: '#46D160',
+        gold: '#FFB000',
       },
     },
   },

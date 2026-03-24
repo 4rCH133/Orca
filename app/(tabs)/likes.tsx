@@ -1,11 +1,10 @@
-/**
- * Liked & Saved posts screen with LOCAL full-text search.
- * No API call needed — searches the SQLite FTS5 index.
- */
 import { useState, useCallback } from 'react';
-import { View, TextInput, FlatList, Text, StyleSheet, Pressable } from 'react-native';
+import { View, TextInput, FlatList, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { searchLikedPosts, searchSavedPosts, LocalPost } from '@/db/likes';
+import { colors } from '@/theme/colors';
+import { typography } from '@/theme/typography';
+import { formatScore, formatTimeAgo } from '@/utils/format';
 
 type Tab = 'liked' | 'saved';
 
@@ -13,10 +12,13 @@ export default function LikesScreen() {
   const [tab, setTab] = useState<Tab>('liked');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LocalPost[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const runSearch = useCallback(async (q: string, t: Tab) => {
+    setLoading(true);
     const posts = t === 'liked' ? await searchLikedPosts(q) : await searchSavedPosts(q);
     setResults(posts);
+    setLoading(false);
   }, []);
 
   useFocusEffect(
@@ -28,33 +30,58 @@ export default function LikesScreen() {
   return (
     <View style={styles.container}>
       {/* Tab switcher */}
-      <View style={styles.tabs}>
+      <View style={styles.tabRow}>
         {(['liked', 'saved'] as Tab[]).map((t) => (
-          <Pressable key={t} onPress={() => setTab(t)} style={[styles.tab, tab === t && styles.tabActive]}>
+          <Pressable
+            key={t}
+            onPress={() => setTab(t)}
+            style={[styles.tab, tab === t && styles.tabActive]}
+          >
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'liked' ? 'Upvoted' : 'Saved'}
+              {t === 'liked' ? '▲  Upvoted' : '◆  Saved'}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      {/* Search box */}
-      <TextInput
-        style={styles.search}
-        placeholder={`Search ${tab} posts...`}
-        placeholderTextColor="#818384"
-        value={query}
-        onChangeText={(q) => { setQuery(q); runSearch(q, tab); }}
-        clearButtonMode="while-editing"
-      />
+      {/* Search bar */}
+      <View style={styles.searchWrap}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={`Search ${tab === 'liked' ? 'upvoted' : 'saved'} posts…`}
+          placeholderTextColor={colors.text.muted}
+          value={query}
+          onChangeText={(q) => { setQuery(q); runSearch(q, tab); }}
+          clearButtonMode="while-editing"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
 
-      {/* Results */}
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostRow post={item} />}
-        ListEmptyComponent={<Text style={styles.empty}>No posts found.</Text>}
-      />
+      {loading ? (
+        <ActivityIndicator color={colors.accent.primary} style={{ marginTop: 32 }} />
+      ) : (
+        <FlatList
+          data={results}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <PostRow post={item} />}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>{tab === 'liked' ? '▲' : '◆'}</Text>
+              <Text style={styles.emptyTitle}>
+                {query ? 'No matches found' : `No ${tab === 'liked' ? 'upvoted' : 'saved'} posts yet`}
+              </Text>
+              <Text style={styles.emptySub}>
+                {query
+                  ? 'Try a different search term'
+                  : `${tab === 'liked' ? 'Upvote' : 'Save'} posts and they'll appear here`}
+              </Text>
+            </View>
+          }
+          contentContainerStyle={results.length === 0 && styles.emptyContainer}
+        />
+      )}
     </View>
   );
 }
@@ -62,32 +89,67 @@ export default function LikesScreen() {
 function PostRow({ post }: { post: LocalPost }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.subreddit}>r/{post.subreddit}</Text>
-      <Text style={styles.title} numberOfLines={2}>{post.title}</Text>
-      <Text style={styles.meta}>↑ {post.score}  💬 {post.num_comments}  u/{post.author}</Text>
+      <View style={styles.rowTop}>
+        <Text style={styles.rowSubreddit}>r/{post.subreddit}</Text>
+        {post.flair ? <Text style={styles.rowFlair}>{post.flair}</Text> : null}
+      </View>
+      <Text style={styles.rowTitle} numberOfLines={2}>{post.title}</Text>
+      <Text style={styles.rowMeta}>
+        ▲ {formatScore(post.score)}  ·  💬 {formatScore(post.num_comments)}  ·  u/{post.author}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A1A1B' },
-  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#343536' },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#FF4500' },
-  tabText: { color: '#818384', fontWeight: '600' },
-  tabTextActive: { color: '#FF4500' },
-  search: {
-    margin: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#272729',
-    borderRadius: 8,
-    color: '#D7DADC',
-    fontSize: 15,
+  container: { flex: 1, backgroundColor: colors.bg.base },
+  tabRow: {
+    flexDirection: 'row',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.default,
   },
-  row: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#343536' },
-  subreddit: { color: '#818384', fontSize: 12, marginBottom: 4 },
-  title: { color: '#D7DADC', fontSize: 15, lineHeight: 20 },
-  meta: { color: '#818384', fontSize: 12, marginTop: 6 },
-  empty: { color: '#818384', textAlign: 'center', marginTop: 40 },
+  tab: {
+    flex: 1,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.text.primary,
+  },
+  tabText: { ...typography.label, color: colors.text.muted },
+  tabTextActive: { color: colors.text.primary },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 12,
+    backgroundColor: colors.bg.elevated,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  searchIcon: { color: colors.text.muted, fontSize: 16 },
+  input: {
+    flex: 1,
+    ...typography.body,
+    color: colors.text.primary,
+    paddingVertical: 10,
+  },
+  row: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.default,
+    gap: 5,
+  },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowSubreddit: { ...typography.label, color: colors.text.primary },
+  rowFlair: { ...typography.caption, color: colors.text.muted },
+  rowTitle: { ...typography.title, color: colors.text.primary, fontWeight: '500' },
+  rowMeta: { ...typography.caption, color: colors.text.muted },
+  emptyContainer: { flexGrow: 1, justifyContent: 'center' },
+  emptyWrap: { alignItems: 'center', gap: 8, paddingHorizontal: 32 },
+  emptyIcon: { fontSize: 32, color: colors.text.muted, marginBottom: 4 },
+  emptyTitle: { ...typography.title, color: colors.text.primary },
+  emptySub: { ...typography.body, color: colors.text.muted, textAlign: 'center' },
 });
