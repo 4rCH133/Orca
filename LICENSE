@@ -1,0 +1,63 @@
+Business Source License 1.1
+
+Licensor:             Arif (github.com/4rCH133)
+Licensed Work:        Orca — Reddit Client for iOS & Android
+                      Version 1.0 © 2026 Arif. All rights reserved.
+Change Date:          2030-03-24
+Change License:       MIT
+
+-----------------------------------------------------------------------------
+
+TERMS
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work.
+
+The Licensor may make an Additional Use Grant, above, permitting limited
+production use.
+
+Effective on the Change Date, or the fourth anniversary of the first publicly
+available distribution of a specific version of the Licensed Work under this
+License, whichever comes first, the Licensor hereby grants you rights under
+the terms of the Change License, and the rights granted in the paragraph
+above terminate.
+
+-----------------------------------------------------------------------------
+
+USE LIMITATION
+
+You may not use the Licensed Work or any derivative of it for commercial
+purposes without the express written permission of the Licensor. Commercial
+purposes include, but are not limited to:
+
+  - Offering the app or a derivative as a paid product or service
+  - Distributing the app under a different name or brand for profit
+  - Using the codebase to build a competing commercial Reddit client
+  - Selling, licensing, or sublicensing the source code to third parties
+
+-----------------------------------------------------------------------------
+
+ADDITIONAL USE GRANT
+
+The following uses are explicitly permitted at no cost:
+
+  - Personal, non-commercial use and self-hosting
+  - Educational study and reference
+  - Open source contributions submitted back to this repository
+  - Reddit Inc. is granted read-only access to this source code solely
+    for the purpose of API access review and policy compliance verification
+
+-----------------------------------------------------------------------------
+
+NOTICE
+
+This is not an open source license. The source code is made available for
+transparency and review purposes. All commercial rights are reserved by the
+Licensor until the Change Date.
+
+For commercial licensing inquiries contact: aragabih@hotmail.com
+
+-----------------------------------------------------------------------------
+
+The Business Source License 1.1 legal text is maintained by MariaDB Corporation Ab.
+Full legal text: https://mariadb.com/bsl11/
