@@ -1,9 +1,8 @@
-/**
- * Local full-text search index for liked/saved posts.
- * Uses SQLite FTS5 so you can search offline without hitting the Reddit API.
- */
+import { Platform } from 'react-native';
 import { getDb } from './schema';
 import { PostData } from '@/api/reddit';
+
+const isNative = Platform.OS !== 'web';
 
 export interface LocalPost {
   id: string;
@@ -40,6 +39,7 @@ function postDataToLocal(post: PostData): Omit<LocalPost, 'liked_at' | 'saved_at
 // ---- Liked Posts ----
 
 export async function upsertLikedPost(post: PostData) {
+  if (!isNative) return;
   const db = await getDb();
   const p = postDataToLocal(post);
   await db.runAsync(
@@ -51,24 +51,26 @@ export async function upsertLikedPost(post: PostData) {
 }
 
 export async function removeLikedPost(postId: string) {
+  if (!isNative) return;
   const db = await getDb();
   await db.runAsync('DELETE FROM liked_posts WHERE id = ?', [postId]);
 }
 
 export async function searchLikedPosts(query: string, limit = 50): Promise<LocalPost[]> {
+  if (!isNative) return [];
   if (!query.trim()) return getLikedPosts(limit);
   const db = await getDb();
   return db.getAllAsync<LocalPost>(
     `SELECT lp.* FROM liked_posts lp
      JOIN liked_posts_fts fts ON lp.rowid = fts.rowid
      WHERE liked_posts_fts MATCH ?
-     ORDER BY rank
-     LIMIT ?`,
+     ORDER BY rank LIMIT ?`,
     [`${query}*`, limit]
   );
 }
 
 export async function getLikedPosts(limit = 50, offset = 0): Promise<LocalPost[]> {
+  if (!isNative) return [];
   const db = await getDb();
   return db.getAllAsync<LocalPost>(
     'SELECT * FROM liked_posts ORDER BY liked_at DESC LIMIT ? OFFSET ?',
@@ -79,6 +81,7 @@ export async function getLikedPosts(limit = 50, offset = 0): Promise<LocalPost[]
 // ---- Saved Posts ----
 
 export async function upsertSavedPost(post: PostData) {
+  if (!isNative) return;
   const db = await getDb();
   const p = postDataToLocal(post);
   await db.runAsync(
@@ -90,24 +93,26 @@ export async function upsertSavedPost(post: PostData) {
 }
 
 export async function removeSavedPost(postId: string) {
+  if (!isNative) return;
   const db = await getDb();
   await db.runAsync('DELETE FROM saved_posts WHERE id = ?', [postId]);
 }
 
 export async function searchSavedPosts(query: string, limit = 50): Promise<LocalPost[]> {
+  if (!isNative) return [];
   if (!query.trim()) return getSavedPosts(limit);
   const db = await getDb();
   return db.getAllAsync<LocalPost>(
     `SELECT sp.* FROM saved_posts sp
      JOIN saved_posts_fts fts ON sp.rowid = fts.rowid
      WHERE saved_posts_fts MATCH ?
-     ORDER BY rank
-     LIMIT ?`,
+     ORDER BY rank LIMIT ?`,
     [`${query}*`, limit]
   );
 }
 
 export async function getSavedPosts(limit = 50, offset = 0): Promise<LocalPost[]> {
+  if (!isNative) return [];
   const db = await getDb();
   return db.getAllAsync<LocalPost>(
     'SELECT * FROM saved_posts ORDER BY saved_at DESC LIMIT ? OFFSET ?',

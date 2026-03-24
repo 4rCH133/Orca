@@ -1,16 +1,21 @@
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
-let db: SQLite.SQLiteDatabase;
+// expo-sqlite is native only — not available on web
+const isNative = Platform.OS !== 'web';
 
-export async function getDb() {
+let db: any = null;
+
+export async function getDb(): Promise<any> {
+  if (!isNative) return null;
   if (!db) {
+    const SQLite = await import('expo-sqlite');
     db = await SQLite.openDatabaseAsync('orca.db');
     await initSchema(db);
   }
   return db;
 }
 
-async function initSchema(db: SQLite.SQLiteDatabase) {
+async function initSchema(db: any) {
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
 
