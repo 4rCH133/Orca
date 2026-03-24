@@ -1,9 +1,16 @@
 import * as AuthSession from 'expo-auth-session';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const CLIENT_ID = process.env.EXPO_PUBLIC_REDDIT_CLIENT_ID!;
-const REDIRECT_URI = process.env.EXPO_PUBLIC_REDDIT_REDIRECT_URI!;
+
+// On web, use the Expo proxy redirect URI so Reddit accepts localhost.
+// On native (iOS/Android), use the deep-link scheme redirect.
+const REDIRECT_URI =
+  Platform.OS === 'web'
+    ? AuthSession.makeRedirectUri({ useProxy: false, path: '--/expo-auth-session' })
+    : process.env.EXPO_PUBLIC_REDDIT_REDIRECT_URI!;
 
 const SCOPES = [
   'identity',

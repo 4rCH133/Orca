@@ -14,7 +14,7 @@ async function redditFetch<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'Orca/1.0.0 (by /u/your_reddit_username)',
+      'User-Agent': 'Orca/1.0.0 (by /u/4rCH133)',
       'Content-Type': 'application/json',
       ...options?.headers,
     },
