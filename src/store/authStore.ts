@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { startRedditOAuth, getStoredToken, refreshAccessToken, logout } from '@/api/auth';
 import { setAccessToken, getMe, RedditUser } from '@/api/reddit';
+import { MOCK_MODE, mockUser } from '@/dev';
 
 interface AuthState {
   user: RedditUser | null;
@@ -17,15 +18,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   initialize: async () => {
+    if (MOCK_MODE) {
+      set({ user: mockUser, isAuthenticated: true, isLoading: false });
+      return;
+    }
+
     try {
       const token = await getStoredToken();
       if (!token) {
         set({ isLoading: false });
         return;
       }
-
       setAccessToken(token);
-
       try {
         const user = await getMe();
         set({ user, isAuthenticated: true, isLoading: false });
@@ -49,6 +53,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async () => {
+    if (MOCK_MODE) {
+      set({ user: mockUser, isAuthenticated: true, isLoading: false });
+      return;
+    }
     set({ isLoading: true });
     const tokens = await startRedditOAuth();
     if (!tokens) {
@@ -61,7 +69,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    await logout();
+    if (!MOCK_MODE) await logout();
     set({ user: null, isAuthenticated: false });
   },
 }));
