@@ -2,7 +2,7 @@
 
 > "Reddit, the way it should feel."
 
-A fast, sleek Reddit client built with React Native + Expo. True OLED black design, offline-capable liked/saved post search, and a clean reading experience.
+A fast, sleek Reddit client built with React Native + Expo. Matte deep-sea design inspired by the orca, offline-capable liked/saved post search, and a clean reading experience. Get your info clear, cut, and to the point.
 
 ---
 
@@ -22,6 +22,9 @@ A fast, sleek Reddit client built with React Native + Expo. True OLED black desi
 | Auth | Reddit OAuth2 via expo-auth-session |
 | Lists | FlashList (Shopify) |
 | Images | expo-image |
+| Icons | lucide-react-native + Unicode glyphs |
+| Bottom Sheets | @gorhom/bottom-sheet |
+| SVG | react-native-svg |
 | Styling | NativeWind (Tailwind CSS) |
 | CI/CD | EAS (Expo Application Services) |
 
@@ -167,7 +170,7 @@ src/
 │   ├── authStore.ts        Auth state (Zustand)
 │   └── settingsStore.ts    Theme + layout prefs (MMKV)
 └── theme/
-    ├── colors.ts           Orca colour system (OLED black base)
+    ├── colors.ts           Orca colour system (matte deep-sea palette)
     └── typography.ts       Type scale + weights
 
 supabase/
@@ -260,12 +263,17 @@ npm test                    # Jest tests
 
 ## Design System
 
-Orca's visual identity is inspired by the orca: stark, intelligent, fast.
+Orca's visual identity is inspired by the orca: calm, intelligent, fast. The palette uses matte deep-sea tones that are easy on the eyes while staying on-brand.
 
-- **Background:** True OLED black `#000000`
-- **Surface:** `#0D0D0E` / `#161617`
-- **Text:** `#F0F0F0` (primary) → `#5A5A5C` (muted)
-- **Accent:** Reddit orange `#FF4500` — used only for interactive actions
+- **Background:** Matte midnight `#0D1117` (not harsh OLED black)
+- **Surface:** `#161B22` / `#1C2128`
+- **Text:** `#E6EDF3` (primary) → `#484F58` (muted)
+- **Primary accent:** Ocean blue `#3B9FD4` — tabs, links, interactive elements
+- **Upvote:** Reddit orange `#FF4500` — used only for upvoted state
+- **Downvote:** Periwinkle blue `#5B8AF0`
+- **Save:** Warm gold `#F0C040`
+- **Icons:** lucide-react-native (action icons) + Unicode geometry glyphs (tab bar: `⌂ ⌕ ◆ ✉ ◉`)
+- **Vote buttons:** `+` / `−` pill design (not Reddit-style arrows)
 - **System fonts** only — zero loading latency
 
 ---
