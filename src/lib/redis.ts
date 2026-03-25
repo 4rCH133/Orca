@@ -1,20 +1,26 @@
 /**
- * Upstash Redis client — used for:
+ * Upstash Redis client — REST-based, works in React Native without native modules.
+ *
+ * Used for:
  * - Caching Reddit API responses (avoid rate limits)
  * - Rate limiting per user
  * - Storing trending/popular subreddits
  *
- * REST-based, works in React Native without native modules.
+ * Fault-tolerant: all operations silently fail if Redis is not configured
+ * or unreachable. The app falls through to direct API calls.
  */
 
-const UPSTASH_URL = process.env.EXPO_PUBLIC_UPSTASH_REDIS_URL!;
-const UPSTASH_TOKEN = process.env.EXPO_PUBLIC_UPSTASH_REDIS_TOKEN!;
+const UPSTASH_URL = process.env.EXPO_PUBLIC_UPSTASH_REDIS_URL;
+const UPSTASH_TOKEN = process.env.EXPO_PUBLIC_UPSTASH_REDIS_TOKEN;
+const isConfigured = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
 
 async function redisCommand(command: string[]): Promise<unknown> {
-  const response = await fetch(UPSTASH_URL, {
+  if (!isConfigured) return null;
+
+  const response = await fetch(UPSTASH_URL!, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${UPSTASH_TOKEN}`,
+      Authorization: `Bearer ${UPSTASH_TOKEN!}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(command),
@@ -53,17 +59,31 @@ export const redis = {
 
 // ---- Cache helpers ----
 
-/** Cache a Reddit API response for `ttl` seconds */
+/**
+ * Cache a Reddit API response for `ttl` seconds.
+ * Falls through to direct fetch if Redis is not configured or errors.
+ */
 export async function withCache<T>(
   key: string,
   fetcher: () => Promise<T>,
   ttlSeconds = 120
 ): Promise<T> {
-  const cached = await redis.get<T>(key);
-  if (cached) return cached;
+  if (!isConfigured) return fetcher();
 
+  // Try to read from cache
+  try {
+    const cached = await redis.get<T>(key);
+    if (cached) return cached;
+  } catch {
+    // Redis read failed — proceed to fetch
+  }
+
+  // Fetch fresh data
   const data = await fetcher();
-  await redis.set(key, data, ttlSeconds);
+
+  // Write to cache (fire-and-forget, non-blocking)
+  redis.set(key, data, ttlSeconds).catch(() => {});
+
   return data;
 }
 

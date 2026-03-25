@@ -1,4 +1,6 @@
-import { PostData, CommentData, RedditUser } from '@/api/reddit';
+import { PostData, CommentData, RedditUser, SubredditData } from '@/api/reddit';
+
+// ---- User ----
 
 export const mockUser: RedditUser = {
   id: 'mock_user_1',
@@ -12,6 +14,8 @@ export const mockUser: RedditUser = {
   verified: true,
 };
 
+// ---- Feed Posts ----
+
 export const mockPosts: PostData[] = [
   {
     id: 'mock1',
@@ -23,15 +27,7 @@ export const mockPosts: PostData[] = [
     selftext: '',
     url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/James_Webb_Space_Telescope_and_Newton%27s_prism.jpg/800px-James_Webb_Space_Telescope_and_Newton%27s_prism.jpg',
     thumbnail: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/James_Webb_Space_Telescope_and_Newton%27s_prism.jpg/800px-James_Webb_Space_Telescope_and_Newton%27s_prism.jpg',
-    preview: {
-      images: [{
-        source: {
-          url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/James_Webb_Space_Telescope_and_Newton%27s_prism.jpg/800px-James_Webb_Space_Telescope_and_Newton%27s_prism.jpg',
-          width: 800,
-          height: 500,
-        }
-      }]
-    },
+    preview: { images: [{ source: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/James_Webb_Space_Telescope_and_Newton%27s_prism.jpg/800px-James_Webb_Space_Telescope_and_Newton%27s_prism.jpg', width: 800, height: 500 } }] },
     score: 142800,
     upvote_ratio: 0.97,
     num_comments: 3241,
@@ -49,11 +45,11 @@ export const mockPosts: PostData[] = [
   {
     id: 'mock2',
     name: 't3_mock2',
-    title: 'I built a React Native Reddit client from scratch — here\'s what I learned about performance optimization',
+    title: "I built a React Native Reddit client from scratch — here's what I learned about performance optimization",
     author: '4rCH133',
     subreddit: 'reactnative',
     subreddit_name_prefixed: 'r/reactnative',
-    selftext: 'After months of development, I want to share the key lessons learned building a high-performance Reddit client with FlashList, TanStack Query, and SQLite FTS5 for offline search.\n\nThe biggest win was switching from FlatList to FlashList — immediately got 60fps scrolling on both platforms.',
+    selftext: "After months of development, I want to share the key lessons learned building a high-performance Reddit client with FlashList, TanStack Query, and SQLite FTS5 for offline search.\n\nThe biggest win was switching from FlatList to FlashList — immediately got 60fps scrolling on both platforms.",
     url: 'https://reddit.com/r/reactnative/comments/mock2',
     thumbnail: 'self',
     score: 8420,
@@ -102,15 +98,7 @@ export const mockPosts: PostData[] = [
     selftext: '',
     url: 'https://i.imgur.com/example.jpg',
     thumbnail: 'https://placedog.net/500/300',
-    preview: {
-      images: [{
-        source: {
-          url: 'https://placedog.net/500/300',
-          width: 500,
-          height: 300,
-        }
-      }]
-    },
+    preview: { images: [{ source: { url: 'https://placedog.net/500/300', width: 500, height: 300 } }] },
     score: 91200,
     upvote_ratio: 0.99,
     num_comments: 742,
@@ -131,7 +119,7 @@ export const mockPosts: PostData[] = [
     author: 'orca_beta_user',
     subreddit: 'redditmobile',
     subreddit_name_prefixed: 'r/redditmobile',
-    selftext: 'Just discovered that Orca indexes all your upvoted posts locally using SQLite FTS5. Searched through 3 years of upvotes in under 100ms. This is the feature I\'ve always wanted.',
+    selftext: "Just discovered that Orca indexes all your upvoted posts locally using SQLite FTS5. Searched through 3 years of upvotes in under 100ms. This is the feature I've always wanted.",
     url: 'https://reddit.com/r/redditmobile/comments/mock5',
     thumbnail: 'self',
     score: 2841,
@@ -149,6 +137,8 @@ export const mockPosts: PostData[] = [
   },
 ];
 
+// ---- Comments ----
+
 export const mockComments: CommentData[] = [
   {
     id: 'mc1',
@@ -161,37 +151,10 @@ export const mockComments: CommentData[] = [
     is_submitter: false,
     replies: {
       data: {
-        after: null,
-        before: null,
+        after: null, before: null,
         children: [
-          {
-            kind: 't1',
-            data: {
-              id: 'mc1a',
-              body: 'And to think each of those tiny dots of light is an entire galaxy containing hundreds of billions of stars. Reality is surreal.',
-              author: 'cosmos_watcher',
-              score: 4200,
-              created_utc: Date.now() / 1000 - 3600 * 2,
-              depth: 1,
-              likes: true,
-              is_submitter: false,
-              replies: '',
-            } as CommentData,
-          },
-          {
-            kind: 't1',
-            data: {
-              id: 'mc1b',
-              body: 'The Hubble Deep Field image was already mind-blowing. This makes that look like a rough draft.',
-              author: 'deep_field_fan',
-              score: 2810,
-              created_utc: Date.now() / 1000 - 3600 * 2.5,
-              depth: 1,
-              likes: null,
-              is_submitter: false,
-              replies: '',
-            } as CommentData,
-          },
+          { kind: 't1', data: { id: 'mc1a', body: 'And to think each of those tiny dots of light is an entire galaxy containing hundreds of billions of stars. Reality is surreal.', author: 'cosmos_watcher', score: 4200, created_utc: Date.now() / 1000 - 3600 * 2, depth: 1, likes: true, is_submitter: false, replies: '' } as CommentData },
+          { kind: 't1', data: { id: 'mc1b', body: 'The Hubble Deep Field image was already mind-blowing. This makes that look like a rough draft.', author: 'deep_field_fan', score: 2810, created_utc: Date.now() / 1000 - 3600 * 2.5, depth: 1, likes: null, is_submitter: false, replies: '' } as CommentData },
         ],
       },
     },
@@ -207,23 +170,9 @@ export const mockComments: CommentData[] = [
     is_submitter: false,
     replies: {
       data: {
-        after: null,
-        before: null,
+        after: null, before: null,
         children: [
-          {
-            kind: 't1',
-            data: {
-              id: 'mc2a',
-              body: 'What\'s the most surprising finding so far from your perspective?',
-              author: 'curious_mind_99',
-              score: 1200,
-              created_utc: Date.now() / 1000 - 3600 * 2,
-              depth: 1,
-              likes: null,
-              is_submitter: false,
-              replies: '',
-            } as CommentData,
-          },
+          { kind: 't1', data: { id: 'mc2a', body: "What's the most surprising finding so far from your perspective?", author: 'curious_mind_99', score: 1200, created_utc: Date.now() / 1000 - 3600 * 2, depth: 1, likes: null, is_submitter: false, replies: '' } as CommentData },
         ],
       },
     },
@@ -237,6 +186,290 @@ export const mockComments: CommentData[] = [
     depth: 0,
     likes: true,
     is_submitter: false,
+    replies: '',
+  },
+];
+
+// ---- Subreddit Data ----
+
+export const mockSubreddits: SubredditData[] = [
+  {
+    id: 'sr_space',
+    display_name: 'space',
+    title: 'Space: The Final Frontier',
+    public_description: 'Share & discuss informative content on: Astrophysics, Cosmology, Space Exploration, Planetary Science, Astrobiology',
+    subscribers: 24_300_000,
+    icon_img: '',
+    banner_img: '',
+    user_is_subscriber: true,
+    over18: false,
+  },
+  {
+    id: 'sr_reactnative',
+    display_name: 'reactnative',
+    title: 'React Native',
+    public_description: 'A community for learning and developing cross-platform mobile applications using React Native by Facebook.',
+    subscribers: 182_000,
+    icon_img: '',
+    banner_img: '',
+    user_is_subscriber: true,
+    over18: false,
+  },
+  {
+    id: 'sr_apple',
+    display_name: 'apple',
+    title: 'Apple',
+    public_description: 'An unofficial community to discuss Apple devices and software, including news, rumors, opinions, and analysis.',
+    subscribers: 6_800_000,
+    icon_img: '',
+    banner_img: '',
+    user_is_subscriber: true,
+    over18: false,
+  },
+  {
+    id: 'sr_dogs',
+    display_name: 'dogs',
+    title: '/r/dogs',
+    public_description: '/r/dogs is a discussion-based subreddit dedicated to support, inform, and advise dog owners.',
+    subscribers: 4_200_000,
+    icon_img: '',
+    banner_img: '',
+    user_is_subscriber: false,
+    over18: false,
+  },
+  {
+    id: 'sr_redditmobile',
+    display_name: 'redditmobile',
+    title: 'Reddit Mobile',
+    public_description: 'Home for news, tips, and discussions about the Reddit mobile apps.',
+    subscribers: 320_000,
+    icon_img: '',
+    banner_img: '',
+    user_is_subscriber: true,
+    over18: false,
+  },
+];
+
+// ---- Inbox Items ----
+
+export interface MockInboxItem {
+  id: string;
+  author: string;
+  subject: string;
+  body: string;
+  created_utc: number;
+  new: boolean;
+  context?: string;
+  type: 'comment_reply' | 'post_reply' | 'mention' | 'message';
+}
+
+export const mockInboxItems: MockInboxItem[] = [
+  {
+    id: 'inbox1',
+    author: 'cosmos_watcher',
+    subject: 're: JWST Deep Field Image',
+    body: 'Great point about the galaxies! I was blown away by the resolution improvement over Hubble.',
+    created_utc: Date.now() / 1000 - 3600 * 1,
+    new: true,
+    context: '/r/space/comments/mock1/mc1a',
+    type: 'comment_reply',
+  },
+  {
+    id: 'inbox2',
+    author: 'flutter_dev_42',
+    subject: 're: React Native Reddit client',
+    body: "Amazing project! Did you consider using Riverpod for state management? Just curious about the Zustand vs Redux decision.",
+    created_utc: Date.now() / 1000 - 3600 * 5,
+    new: true,
+    context: '/r/reactnative/comments/mock2',
+    type: 'post_reply',
+  },
+  {
+    id: 'inbox3',
+    author: 'tech_reporter',
+    subject: 'username mention',
+    body: 'Shoutout to u/4rCH133 for building Orca — the search feature is genuinely the best I\'ve seen in any Reddit client.',
+    created_utc: Date.now() / 1000 - 3600 * 12,
+    new: false,
+    context: '/r/redditmobile/comments/xyz123',
+    type: 'mention',
+  },
+  {
+    id: 'inbox4',
+    author: 'reddit_admin',
+    subject: 'Welcome to Reddit API',
+    body: 'Your API application has been approved. You now have full access to the Reddit API with 60 requests per minute.',
+    created_utc: Date.now() / 1000 - 3600 * 48,
+    new: false,
+    type: 'message',
+  },
+];
+
+// ---- Saved Posts (for Likes screen) ----
+
+export const mockSavedPosts: PostData[] = [
+  {
+    ...mockPosts[1], // React Native post
+    saved: true,
+    likes: true,
+  },
+  {
+    id: 'saved1',
+    name: 't3_saved1',
+    title: 'Complete guide to SQLite FTS5 in React Native — full-text search on mobile',
+    author: 'sqlite_expert',
+    subreddit: 'reactnative',
+    subreddit_name_prefixed: 'r/reactnative',
+    selftext: 'A comprehensive tutorial on setting up FTS5 virtual tables with expo-sqlite for blazing-fast local search.',
+    url: 'https://reddit.com/r/reactnative/comments/saved1',
+    thumbnail: 'self',
+    score: 1890,
+    upvote_ratio: 0.96,
+    num_comments: 67,
+    created_utc: Date.now() / 1000 - 3600 * 72,
+    permalink: '/r/reactnative/comments/saved1',
+    is_self: true,
+    likes: true,
+    saved: true,
+    over_18: false,
+    stickied: false,
+    is_video: false,
+    link_flair_text: 'Tutorial',
+  },
+  {
+    id: 'saved2',
+    name: 't3_saved2',
+    title: 'The best productivity apps of 2026 — my honest tier list after testing 40+ apps',
+    author: 'productivity_nerd',
+    subreddit: 'productivity',
+    subreddit_name_prefixed: 'r/productivity',
+    selftext: '',
+    url: 'https://medium.com/best-apps-2026',
+    thumbnail: 'default',
+    score: 14200,
+    upvote_ratio: 0.91,
+    num_comments: 892,
+    created_utc: Date.now() / 1000 - 3600 * 120,
+    permalink: '/r/productivity/comments/saved2',
+    is_self: false,
+    likes: null,
+    saved: true,
+    over_18: false,
+    stickied: false,
+    is_video: false,
+    link_flair_text: 'Resource',
+  },
+  {
+    id: 'saved3',
+    name: 't3_saved3',
+    title: 'TIL that orcas are the only known non-human animal to have evolved based on culture',
+    author: 'nature_facts',
+    subreddit: 'todayilearned',
+    subreddit_name_prefixed: 'r/todayilearned',
+    selftext: '',
+    url: 'https://en.wikipedia.org/wiki/Orca#Culture',
+    thumbnail: 'default',
+    score: 67000,
+    upvote_ratio: 0.97,
+    num_comments: 2340,
+    created_utc: Date.now() / 1000 - 3600 * 240,
+    permalink: '/r/todayilearned/comments/saved3',
+    is_self: false,
+    likes: true,
+    saved: true,
+    over_18: false,
+    stickied: false,
+    is_video: false,
+    link_flair_text: null,
+  },
+];
+
+// ---- User's Own Posts ----
+
+export const mockUserPosts: PostData[] = [
+  mockPosts[1], // The React Native post by 4rCH133
+  {
+    id: 'up1',
+    name: 't3_up1',
+    title: 'Orca v0.1 beta — looking for testers for my new Reddit client',
+    author: '4rCH133',
+    subreddit: 'redditmobile',
+    subreddit_name_prefixed: 'r/redditmobile',
+    selftext: 'Built Orca from scratch with React Native. Looking for beta testers who want instant offline search of their liked/saved posts.',
+    url: 'https://reddit.com/r/redditmobile/comments/up1',
+    thumbnail: 'self',
+    score: 421,
+    upvote_ratio: 0.92,
+    num_comments: 34,
+    created_utc: Date.now() / 1000 - 3600 * 48,
+    permalink: '/r/redditmobile/comments/up1',
+    is_self: true,
+    likes: true,
+    saved: false,
+    over_18: false,
+    stickied: false,
+    is_video: false,
+    link_flair_text: 'Beta',
+  },
+  {
+    id: 'up2',
+    name: 't3_up2',
+    title: 'FlashList vs FlatList benchmark — 10,000 items, real measurements',
+    author: '4rCH133',
+    subreddit: 'reactnative',
+    subreddit_name_prefixed: 'r/reactnative',
+    selftext: 'Ran a proper benchmark comparing FlashList and FlatList with 10K items on both iOS and Android. Results are dramatic.',
+    url: 'https://reddit.com/r/reactnative/comments/up2',
+    thumbnail: 'self',
+    score: 2100,
+    upvote_ratio: 0.95,
+    num_comments: 89,
+    created_utc: Date.now() / 1000 - 3600 * 168,
+    permalink: '/r/reactnative/comments/up2',
+    is_self: true,
+    likes: true,
+    saved: false,
+    over_18: false,
+    stickied: false,
+    is_video: false,
+    link_flair_text: 'Benchmark',
+  },
+];
+
+// ---- User's Own Comments ----
+
+export const mockUserComments: CommentData[] = [
+  {
+    id: 'uc1',
+    body: 'The trick is using FlashList with estimatedItemSize — it pre-allocates memory based on your hint, which eliminates layout thrashing during fast scrolling.',
+    author: '4rCH133',
+    score: 342,
+    created_utc: Date.now() / 1000 - 3600 * 12,
+    depth: 0,
+    likes: true,
+    is_submitter: false,
+    replies: '',
+  },
+  {
+    id: 'uc2',
+    body: 'SQLite FTS5 with content tables and triggers is the way to go. The key insight is using MATCH with prefix queries (query + "*") for instant as-you-type results.',
+    author: '4rCH133',
+    score: 189,
+    created_utc: Date.now() / 1000 - 3600 * 36,
+    depth: 1,
+    likes: null,
+    is_submitter: false,
+    replies: '',
+  },
+  {
+    id: 'uc3',
+    body: "Zustand + TanStack Query is underrated. Zustand for UI state, TanStack Query for server state. No Redux boilerplate, and you get infinite scroll + caching for free.",
+    author: '4rCH133',
+    score: 567,
+    created_utc: Date.now() / 1000 - 3600 * 72,
+    depth: 0,
+    likes: true,
+    is_submitter: true,
     replies: '',
   },
 ];

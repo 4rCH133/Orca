@@ -5,13 +5,32 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { searchReddit, PostData } from '@/api/reddit';
 import { PostCard } from '@/components/feed/PostCard';
-import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
+import { useThemedStyles } from '@/theme/useTheme';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const router = useRouter();
+
+  const s = useThemedStyles((t) => ({
+    container: { flex: 1, backgroundColor: t.colors.bg.base },
+    searchRow: { padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.default },
+    inputWrap: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      backgroundColor: t.colors.bg.elevated,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      gap: 8,
+    },
+    searchIcon: { color: t.colors.text.muted, fontSize: 16 },
+    input: { flex: 1, ...t.typography.body, color: t.colors.text.primary, paddingVertical: 10 },
+    clearBtn: { color: t.colors.text.muted, fontSize: 14 },
+    empty: { ...t.typography.body, color: t.colors.text.muted, textAlign: 'center' as const, marginTop: 40 },
+    hint: { ...t.typography.body, color: t.colors.text.muted, textAlign: 'center' as const, marginTop: 60, paddingHorizontal: 32 },
+    accent: t.colors.accent.ocean,
+    muted: t.colors.text.muted,
+  }));
 
   const { data, isLoading } = useQuery({
     queryKey: ['search', submitted],
@@ -26,15 +45,14 @@ export default function SearchScreen() {
       .map((c) => c.data as PostData) ?? [];
 
   return (
-    <View style={styles.container}>
-      {/* Search bar */}
-      <View style={styles.searchRow}>
-        <View style={styles.inputWrap}>
-          <Text style={styles.searchIcon}>⌕</Text>
+    <View style={s.container}>
+      <View style={s.searchRow}>
+        <View style={s.inputWrap}>
+          <Text style={s.searchIcon}>⌕</Text>
           <TextInput
-            style={styles.input}
+            style={s.input}
             placeholder="Search Reddit..."
-            placeholderTextColor={colors.text.muted}
+            placeholderTextColor={s.muted as string}
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={() => setSubmitted(query)}
@@ -44,18 +62,18 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <Pressable onPress={() => { setQuery(''); setSubmitted(''); }} hitSlop={8}>
-              <Text style={styles.clearBtn}>✕</Text>
+              <Text style={s.clearBtn}>✕</Text>
             </Pressable>
           )}
         </View>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.accent.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={s.accent as string} style={{ marginTop: 40 }} />
       ) : results.length === 0 && submitted ? (
-        <Text style={styles.empty}>No results for "{submitted}"</Text>
+        <Text style={s.empty}>No results for "{submitted}"</Text>
       ) : submitted === '' ? (
-        <Text style={styles.hint}>Search for posts, subreddits, and communities</Text>
+        <Text style={s.hint}>Search for posts, subreddits, and communities</Text>
       ) : (
         <FlashList
           data={results}
@@ -67,26 +85,3 @@ export default function SearchScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.base },
-  searchRow: { padding: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border.default },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bg.elevated,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  searchIcon: { color: colors.text.muted, fontSize: 16 },
-  input: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text.primary,
-    paddingVertical: 10,
-  },
-  clearBtn: { color: colors.text.muted, fontSize: 14 },
-  empty: { ...typography.body, color: colors.text.muted, textAlign: 'center', marginTop: 40 },
-  hint: { ...typography.body, color: colors.text.muted, textAlign: 'center', marginTop: 60, paddingHorizontal: 32 },
-});

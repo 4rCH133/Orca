@@ -1,20 +1,19 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
+import { View, Text } from 'react-native';
+import { useThemedStyles } from '@/theme/useTheme';
 
 export default function InboxScreen() {
+  const s = useThemedStyles((t) => ({
+    container: { flex: 1, backgroundColor: t.colors.bg.base, justifyContent: 'center' as const, alignItems: 'center' as const, gap: 8 },
+    icon: { fontSize: 40, color: t.colors.text.muted, marginBottom: 4 },
+    label: { ...t.typography.titleLarge, color: t.colors.text.primary },
+    sub: { ...t.typography.body, color: t.colors.text.muted },
+  }));
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.icon}>✉</Text>
-      <Text style={styles.label}>Inbox</Text>
-      <Text style={styles.sub}>Coming in Phase 4</Text>
+    <View style={s.container}>
+      <Text style={s.icon}>✉</Text>
+      <Text style={s.label}>Inbox</Text>
+      <Text style={s.sub}>Coming in Phase 4</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.base, justifyContent: 'center', alignItems: 'center', gap: 8 },
-  icon: { fontSize: 40, color: colors.text.muted, marginBottom: 4 },
-  label: { ...typography.titleLarge, color: colors.text.primary },
-  sub: { ...typography.body, color: colors.text.muted },
-});

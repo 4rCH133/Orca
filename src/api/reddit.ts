@@ -1,15 +1,27 @@
 /**
  * Reddit API client — thin wrapper around the OAuth REST API.
  * Uses TanStack Query for caching; raw fetches go through this client.
+ *
+ * 401 handling: automatically refreshes token + retries once (mutex-guarded).
+ * Rate limit headers parsed on every response and stored in rateLimitStore.
+ * Redis caching via withCache() for feeds, posts, subreddit info.
  */
 
+import { useRateLimitStore } from '@/store/rateLimitStore';
+import { useAuthStore } from '@/store/authStore';
+import { refreshAccessToken } from '@/api/auth';
+import { withCache, CacheKeys } from '@/lib/redis';
+
 let accessToken: string | null = null;
+
+// Mutex: ensures only one token refresh runs at a time across concurrent 401s
+let refreshPromise: Promise<string | null> | null = null;
 
 export function setAccessToken(token: string) {
   accessToken = token;
 }
 
-async function redditFetch<T>(path: string, options?: RequestInit): Promise<T> {
+async function redditFetch<T>(path: string, options?: RequestInit, _isRetry = false): Promise<T> {
   const response = await fetch(`https://oauth.reddit.com${path}`, {
     ...options,
     headers: {
@@ -20,9 +32,40 @@ async function redditFetch<T>(path: string, options?: RequestInit): Promise<T> {
     },
   });
 
+  // Parse rate limit headers from every response (including 401s)
+  const rlRemaining = response.headers.get('X-Ratelimit-Remaining');
+  const rlUsed = response.headers.get('X-Ratelimit-Used');
+  const rlReset = response.headers.get('X-Ratelimit-Reset');
+  if (rlRemaining != null) {
+    useRateLimitStore.getState().update(
+      Math.floor(Number(rlRemaining)),
+      Number(rlUsed),
+      Number(rlReset),
+    );
+  }
+
+  // 401: auto-refresh token and retry once
   if (response.status === 401) {
-    // Token expired — auth store should handle refresh
-    throw new Error('TOKEN_EXPIRED');
+    if (_isRetry) {
+      // Already retried once — give up, log out
+      useAuthStore.getState().logout();
+      throw new Error('SESSION_EXPIRED');
+    }
+
+    // Mutex: if another call is already refreshing, reuse that promise
+    if (!refreshPromise) {
+      refreshPromise = refreshAccessToken();
+    }
+    const newToken = await refreshPromise;
+    refreshPromise = null;
+
+    if (!newToken) {
+      useAuthStore.getState().logout();
+      throw new Error('SESSION_EXPIRED');
+    }
+
+    setAccessToken(newToken);
+    return redditFetch<T>(path, options, true);
   }
 
   if (!response.ok) {
@@ -40,11 +83,14 @@ export type TopTimeframe = 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
 export async function getFeed(
   sort: FeedSort = 'best',
   after?: string,
-  limit = 25
+  limit = 25,
+  bypassCache = false,
 ) {
-  return redditFetch<RedditListing>(
+  const fetcher = () => redditFetch<RedditListing>(
     `/${sort}?limit=${limit}${after ? `&after=${after}` : ''}`
   );
+  if (bypassCache) return fetcher();
+  return withCache(CacheKeys.feed(sort, after), fetcher, 120);
 }
 
 export async function getSubredditFeed(
@@ -58,8 +104,10 @@ export async function getSubredditFeed(
   );
 }
 
-export async function getPost(postId: string) {
-  return redditFetch<[RedditListing, RedditListing]>(`/comments/${postId}?limit=200`);
+export async function getPost(postId: string, bypassCache = false) {
+  const fetcher = () => redditFetch<[RedditListing, RedditListing]>(`/comments/${postId}?limit=200`);
+  if (bypassCache) return fetcher();
+  return withCache(CacheKeys.post(postId), fetcher, 300);
 }
 
 export async function votePost(id: string, direction: 1 | 0 | -1) {
@@ -113,6 +161,12 @@ export async function getUpvotedPosts(username: string, after?: string, limit = 
   );
 }
 
+export async function getDownvotedPosts(username: string, after?: string, limit = 25) {
+  return redditFetch<RedditListing>(
+    `/user/${username}/downvoted?type=links&limit=${limit}${after ? `&after=${after}` : ''}`
+  );
+}
+
 // ---- Subreddits ----
 
 export async function getMySubreddits(after?: string) {
@@ -121,8 +175,10 @@ export async function getMySubreddits(after?: string) {
   );
 }
 
-export async function getSubredditInfo(subreddit: string) {
-  return redditFetch<{ data: SubredditData }>(`/r/${subreddit}/about`);
+export async function getSubredditInfo(subreddit: string, bypassCache = false) {
+  const fetcher = () => redditFetch<{ data: SubredditData }>(`/r/${subreddit}/about`);
+  if (bypassCache) return fetcher();
+  return withCache(CacheKeys.subredditInfo(subreddit), fetcher, 600);
 }
 
 // ---- Types ----

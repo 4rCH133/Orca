@@ -1,27 +1,65 @@
 import { create } from 'zustand';
-import { MMKV } from 'react-native-mmkv';
+import type { ThemeMode } from '@/theme/tokens';
 
-const storage = new MMKV({ id: 'settings' });
-
-type Theme = 'system' | 'light' | 'dark' | 'matte';
 type FeedLayout = 'card' | 'compact' | 'list';
 
-// Migrate legacy 'oled' theme value to 'matte'
-function loadTheme(): Theme {
-  const stored = storage.getString('theme');
-  if (stored === 'oled') {
-    storage.set('theme', 'matte');
-    return 'matte';
+// MMKV v3 requires TurboModules. Wrap in try-catch so Expo Go / web
+// fall back to an in-memory map with the same API surface.
+interface KVStorage {
+  getString(key: string): string | undefined;
+  getBoolean(key: string): boolean | undefined;
+  set(key: string, value: string | boolean | number): void;
+}
+
+function createStorage(): KVStorage {
+  try {
+    const { MMKV } = require('react-native-mmkv');
+    return new MMKV({ id: 'settings' });
+  } catch {
+    // Fallback: in-memory store (Expo Go, web, or missing TurboModules)
+    const map = new Map<string, string | boolean | number>();
+    return {
+      getString: (key) => {
+        const v = map.get(key);
+        return typeof v === 'string' ? v : undefined;
+      },
+      getBoolean: (key) => {
+        const v = map.get(key);
+        return typeof v === 'boolean' ? v : undefined;
+      },
+      set: (key, value) => map.set(key, value),
+    };
   }
-  return (stored as Theme) ?? 'system';
+}
+
+const storage = createStorage();
+
+// Migrate legacy theme values to current set
+function loadTheme(): ThemeMode {
+  const stored = storage.getString('theme');
+  // Legacy migrations
+  if (stored === 'oled') {
+    storage.set('theme', 'amoledBlack');
+    return 'amoledBlack';
+  }
+  if (stored === 'matte' || stored === 'dark') {
+    storage.set('theme', 'darkMatte');
+    return 'darkMatte';
+  }
+  // Validate against known modes
+  const valid: ThemeMode[] = ['system', 'light', 'darkGray', 'darkMatte', 'amoledBlack'];
+  if (stored && valid.includes(stored as ThemeMode)) {
+    return stored as ThemeMode;
+  }
+  return 'system';
 }
 
 interface SettingsState {
-  theme: Theme;
+  theme: ThemeMode;
   feedLayout: FeedLayout;
   autoPlayVideos: boolean;
   blurNSFW: boolean;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: ThemeMode) => void;
   setFeedLayout: (layout: FeedLayout) => void;
   setAutoPlayVideos: (v: boolean) => void;
   setBlurNSFW: (v: boolean) => void;

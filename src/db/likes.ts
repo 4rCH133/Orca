@@ -119,3 +119,45 @@ export async function getSavedPosts(limit = 50, offset = 0): Promise<LocalPost[]
     [limit, offset]
   );
 }
+
+// ---- Downvoted Posts ----
+
+export async function upsertDownvotedPost(post: PostData) {
+  if (!isNative) return;
+  const db = await getDb();
+  const p = postDataToLocal(post);
+  await db.runAsync(
+    `INSERT OR REPLACE INTO downvoted_posts
+       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair]
+  );
+}
+
+export async function removeDownvotedPost(postId: string) {
+  if (!isNative) return;
+  const db = await getDb();
+  await db.runAsync('DELETE FROM downvoted_posts WHERE id = ?', [postId]);
+}
+
+export async function searchDownvotedPosts(query: string, limit = 50): Promise<LocalPost[]> {
+  if (!isNative) return [];
+  if (!query.trim()) return getDownvotedPosts(limit);
+  const db = await getDb();
+  return db.getAllAsync<LocalPost>(
+    `SELECT dp.* FROM downvoted_posts dp
+     JOIN downvoted_posts_fts fts ON dp.rowid = fts.rowid
+     WHERE downvoted_posts_fts MATCH ?
+     ORDER BY rank LIMIT ?`,
+    [`${query}*`, limit]
+  );
+}
+
+export async function getDownvotedPosts(limit = 50, offset = 0): Promise<LocalPost[]> {
+  if (!isNative) return [];
+  const db = await getDb();
+  return db.getAllAsync<LocalPost>(
+    'SELECT * FROM downvoted_posts ORDER BY downvoted_at DESC LIMIT ? OFFSET ?',
+    [limit, offset]
+  );
+}

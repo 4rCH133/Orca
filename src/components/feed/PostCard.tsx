@@ -5,8 +5,8 @@ import { MessageCircle } from 'lucide-react-native';
 import { PostData } from '@/api/reddit';
 import { VoteButtons } from '@/components/ui/VoteButtons';
 import { formatScore, formatTimeAgo } from '@/utils/format';
-import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
+import { useTheme } from '@/theme/useTheme';
+import { useThemedStyles } from '@/theme/useTheme';
 
 interface Props {
   post: PostData;
@@ -16,93 +16,93 @@ interface Props {
 
 export function PostCard({ post, onVote, onSave }: Props) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+
+  const s = useThemedStyles((t) => ({
+    card: {
+      backgroundColor: t.colors.bg.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.colors.border.default,
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 10,
+    },
+    cardPressed: { backgroundColor: t.colors.bg.elevated },
+    header: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 5, marginBottom: 7 },
+    subreddit: { ...t.typography.label, color: t.colors.accent.ocean },
+    dot: { color: t.colors.text.muted, fontSize: 10 },
+    meta: { ...t.typography.caption, color: t.colors.text.muted, flex: 1 },
+    mainRow: { flexDirection: 'row' as const, gap: 10, marginBottom: 10 },
+    textBlock: { flex: 1, gap: 6 },
+    title: { ...t.typography.title, color: t.colors.text.primary },
+    flairBadge: {
+      alignSelf: 'flex-start' as const,
+      backgroundColor: t.colors.bg.subtle,
+      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+    },
+    flairText: { ...t.typography.caption, color: t.colors.text.muted },
+    thumbSmall: { width: 90, height: 72, borderRadius: 6, backgroundColor: t.colors.bg.elevated },
+    thumbFull: { width: '100%' as any, height: 240, borderRadius: 8, backgroundColor: t.colors.bg.elevated, marginBottom: 10 },
+    footer: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+    footerRight: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14 },
+    commentsText: { ...t.typography.caption, color: t.colors.text.muted, marginLeft: 4 },
+    saveIcon: { color: t.colors.text.muted, fontSize: 15 },
+    saveIconActive: { color: t.colors.accent.save },
+  }));
+
   const thumbnail =
     post.preview?.images?.[0]?.source?.url?.replace(/&amp;/g, '&') ??
-    (post.thumbnail !== 'self' &&
-    post.thumbnail !== 'default' &&
-    post.thumbnail !== 'nsfw' &&
-    post.thumbnail?.startsWith('http')
+    (post.thumbnail !== 'self' && post.thumbnail !== 'default' && post.thumbnail !== 'nsfw' && post.thumbnail?.startsWith('http')
       ? post.thumbnail
       : null);
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [s.card, pressed && s.cardPressed]}
       onPress={() => router.push(`/post/${post.id}`)}
-      android_ripple={{ color: colors.bg.elevated }}
+      android_ripple={{ color: c.bg.elevated }}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            router.push(`/r/${post.subreddit}`);
-          }}
-          hitSlop={4}
-        >
-          <Text style={styles.subreddit}>r/{post.subreddit}</Text>
+      <View style={s.header}>
+        <Pressable onPress={(e) => { e.stopPropagation(); router.push(`/r/${post.subreddit}`); }} hitSlop={4}>
+          <Text style={s.subreddit}>r/{post.subreddit}</Text>
         </Pressable>
-        <Text style={styles.dot}>·</Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {formatTimeAgo(post.created_utc)}
-        </Text>
+        <Text style={s.dot}>·</Text>
+        <Text style={s.meta} numberOfLines={1}>{formatTimeAgo(post.created_utc)}</Text>
       </View>
 
-      {/* Main row: text + thumbnail side-by-side */}
-      <View style={styles.mainRow}>
-        <View style={styles.textBlock}>
-          <Text style={styles.title} numberOfLines={3}>
-            {post.title}
-          </Text>
+      <View style={s.mainRow}>
+        <View style={s.textBlock}>
+          <Text style={s.title} numberOfLines={3}>{post.title}</Text>
           {post.link_flair_text ? (
-            <View style={styles.flairBadge}>
-              <Text style={styles.flairText} numberOfLines={1}>
-                {post.link_flair_text}
-              </Text>
+            <View style={s.flairBadge}>
+              <Text style={s.flairText} numberOfLines={1}>{post.link_flair_text}</Text>
             </View>
           ) : null}
         </View>
-
         {thumbnail ? (
-          <Image
-            source={{ uri: thumbnail }}
-            style={styles.thumbSmall}
-            contentFit="cover"
-            transition={150}
-          />
+          <Image source={{ uri: thumbnail }} style={s.thumbSmall} contentFit="cover" transition={150} />
         ) : null}
       </View>
 
-      {/* Full-width image for image posts */}
       {!thumbnail && post.post_hint === 'image' && post.url ? (
-        <Image
-          source={{ uri: post.url }}
-          style={styles.thumbFull}
-          contentFit="cover"
-          transition={200}
-        />
+        <Image source={{ uri: post.url }} style={s.thumbFull} contentFit="cover" transition={200} />
       ) : null}
 
-      {/* Footer */}
-      <View style={styles.footer}>
+      <View style={s.footer}>
         <VoteButtons
           score={post.score}
           likes={post.likes}
           onUpvote={() => onVote?.(post.id, post.likes === true ? 0 : 1)}
           onDownvote={() => onVote?.(post.id, post.likes === false ? 0 : -1)}
         />
-        <View style={styles.footerRight}>
-          <MessageCircle size={13} color={colors.text.muted} />
-          <Text style={styles.commentsText}>{formatScore(post.num_comments)}</Text>
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onSave?.(post.id, !post.saved);
-            }}
-            hitSlop={8}
-            style={styles.saveBtn}
-          >
-            <Text style={[styles.saveIcon, post.saved && styles.saveIconActive]}>
+        <View style={s.footerRight}>
+          <MessageCircle size={13} color={c.text.muted} />
+          <Text style={s.commentsText}>{formatScore(post.num_comments)}</Text>
+          <Pressable onPress={(e) => { e.stopPropagation(); onSave?.(post.id, !post.saved); }} hitSlop={8}>
+            <Text style={[s.saveIcon, post.saved && s.saveIconActive]}>
               {post.saved ? '◆' : '◇'}
             </Text>
           </Pressable>
@@ -111,49 +111,3 @@ export function PostCard({ post, onVote, onSave }: Props) {
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.default,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 10,
-  },
-  cardPressed: { backgroundColor: colors.bg.elevated },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 7 },
-  subreddit: { ...typography.label, color: colors.accent.ocean },
-  dot: { color: colors.text.muted, fontSize: 10 },
-  meta: { ...typography.caption, color: colors.text.muted, flex: 1 },
-  mainRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  textBlock: { flex: 1, gap: 6 },
-  title: { ...typography.title, color: colors.text.primary },
-  flairBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.bg.subtle,
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  flairText: { ...typography.caption, color: colors.text.muted },
-  thumbSmall: {
-    width: 90,
-    height: 72,
-    borderRadius: 6,
-    backgroundColor: colors.bg.elevated,
-  },
-  thumbFull: {
-    width: '100%',
-    height: 240,
-    borderRadius: 8,
-    backgroundColor: colors.bg.elevated,
-    marginBottom: 10,
-  },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  commentsText: { ...typography.caption, color: colors.text.muted, marginLeft: 4 },
-  saveBtn: {},
-  saveIcon: { color: colors.text.muted, fontSize: 15 },
-  saveIconActive: { color: colors.accent.save },
-});

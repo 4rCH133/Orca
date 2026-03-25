@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { searchLikedPosts, searchSavedPosts, LocalPost } from '@/db/likes';
-import { colors } from '@/theme/colors';
-import { typography } from '@/theme/typography';
+import { searchLikedPosts, searchSavedPosts, searchDownvotedPosts, LocalPost } from '@/db/likes';
+import { useTheme } from '@/theme/useTheme';
+import { useThemedStyles } from '@/theme/useTheme';
 import { formatScore, formatTimeAgo } from '@/utils/format';
 
-type Tab = 'liked' | 'saved';
+type Tab = 'upvoted' | 'downvoted' | 'saved';
 
 export default function LikesScreen() {
   const [tab, setTab] = useState<Tab>('liked');
@@ -14,9 +14,51 @@ export default function LikesScreen() {
   const [results, setResults] = useState<LocalPost[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const s = useThemedStyles((t) => ({
+    container: { flex: 1, backgroundColor: t.colors.bg.base },
+    tabRow: { flexDirection: 'row' as const, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.colors.border.default },
+    tab: { flex: 1, paddingVertical: 13, alignItems: 'center' as const },
+    tabActive: { borderBottomWidth: 2, borderBottomColor: t.colors.accent.ocean },
+    tabText: { ...t.typography.label, color: t.colors.text.muted },
+    tabTextActive: { color: t.colors.text.primary },
+    searchWrap: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      margin: 12,
+      backgroundColor: t.colors.bg.elevated,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      gap: 8,
+    },
+    searchIcon: { color: t.colors.text.muted, fontSize: 16 },
+    input: { flex: 1, ...t.typography.body, color: t.colors.text.primary, paddingVertical: 10 },
+    row: {
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.colors.border.default,
+      gap: 5,
+    },
+    rowTop: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8 },
+    rowSubreddit: { ...t.typography.label, color: t.colors.accent.ocean },
+    rowFlair: { ...t.typography.caption, color: t.colors.text.muted },
+    rowTitle: { ...t.typography.title, color: t.colors.text.primary, fontWeight: '500' as const },
+    rowMeta: { ...t.typography.caption, color: t.colors.text.muted },
+    emptyContainer: { flexGrow: 1, justifyContent: 'center' as const },
+    emptyWrap: { alignItems: 'center' as const, gap: 8, paddingHorizontal: 32 },
+    emptyIcon: { fontSize: 32, color: t.colors.text.muted, marginBottom: 4 },
+    emptyTitle: { ...t.typography.title, color: t.colors.text.primary },
+    emptySub: { ...t.typography.body, color: t.colors.text.muted, textAlign: 'center' as const },
+    accent: t.colors.accent.ocean,
+    muted: t.colors.text.muted,
+  }));
+
   const runSearch = useCallback(async (q: string, t: Tab) => {
     setLoading(true);
-    const posts = t === 'liked' ? await searchLikedPosts(q) : await searchSavedPosts(q);
+    let posts: LocalPost[];
+    if (t === 'upvoted') posts = await searchLikedPosts(q);
+    else if (t === 'downvoted') posts = await searchDownvotedPosts(q);
+    else posts = await searchSavedPosts(q);
     setResults(posts);
     setLoading(false);
   }, []);
@@ -28,29 +70,25 @@ export default function LikesScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Tab switcher */}
-      <View style={styles.tabRow}>
-        {(['liked', 'saved'] as Tab[]).map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            style={[styles.tab, tab === t && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'liked' ? '▲  Upvoted' : '◆  Saved'}
-            </Text>
+    <View style={s.container}>
+      <View style={s.tabRow}>
+        {([
+          { key: 'upvoted' as Tab, label: '+  Upvoted' },
+          { key: 'downvoted' as Tab, label: '−  Downvoted' },
+          { key: 'saved' as Tab, label: '◆  Saved' },
+        ]).map(({ key, label }) => (
+          <Pressable key={key} onPress={() => setTab(key)} style={[s.tab, tab === key && s.tabActive]}>
+            <Text style={[s.tabText, tab === key && s.tabTextActive]}>{label}</Text>
           </Pressable>
         ))}
       </View>
 
-      {/* Search bar */}
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>⌕</Text>
+      <View style={s.searchWrap}>
+        <Text style={s.searchIcon}>⌕</Text>
         <TextInput
-          style={styles.input}
-          placeholder={`Search ${tab === 'liked' ? 'upvoted' : 'saved'} posts…`}
-          placeholderTextColor={colors.text.muted}
+          style={s.input}
+          placeholder={`Search ${tab} posts…`}
+          placeholderTextColor={s.muted as string}
           value={query}
           onChangeText={(q) => { setQuery(q); runSearch(q, tab); }}
           clearButtonMode="while-editing"
@@ -60,96 +98,39 @@ export default function LikesScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={colors.accent.primary} style={{ marginTop: 32 }} />
+        <ActivityIndicator color={s.accent as string} style={{ marginTop: 32 }} />
       ) : (
         <FlatList
           data={results}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PostRow post={item} />}
-          ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyIcon}>{tab === 'liked' ? '▲' : '◆'}</Text>
-              <Text style={styles.emptyTitle}>
-                {query ? 'No matches found' : `No ${tab === 'liked' ? 'upvoted' : 'saved'} posts yet`}
+          renderItem={({ item }) => (
+            <View style={s.row}>
+              <View style={s.rowTop}>
+                <Text style={s.rowSubreddit}>r/{item.subreddit}</Text>
+                {item.flair ? <Text style={s.rowFlair}>{item.flair}</Text> : null}
+              </View>
+              <Text style={s.rowTitle} numberOfLines={2}>{item.title}</Text>
+              <Text style={s.rowMeta}>
+                + {formatScore(item.score)}  ·  {formatScore(item.num_comments)} comments  ·  u/{item.author}
               </Text>
-              <Text style={styles.emptySub}>
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={s.emptyWrap}>
+              <Text style={s.emptyIcon}>{tab === 'upvoted' ? '+' : tab === 'downvoted' ? '−' : '◆'}</Text>
+              <Text style={s.emptyTitle}>
+                {query ? 'No matches found' : `No ${tab} posts yet`}
+              </Text>
+              <Text style={s.emptySub}>
                 {query
                   ? 'Try a different search term'
-                  : `${tab === 'liked' ? 'Upvote' : 'Save'} posts and they'll appear here`}
+                  : `${tab === 'upvoted' ? 'Upvote' : tab === 'downvoted' ? 'Downvote' : 'Save'} posts and they'll appear here — searchable offline`}
               </Text>
             </View>
           }
-          contentContainerStyle={results.length === 0 && styles.emptyContainer}
+          contentContainerStyle={results.length === 0 ? s.emptyContainer : undefined}
         />
       )}
     </View>
   );
 }
-
-function PostRow({ post }: { post: LocalPost }) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.rowTop}>
-        <Text style={styles.rowSubreddit}>r/{post.subreddit}</Text>
-        {post.flair ? <Text style={styles.rowFlair}>{post.flair}</Text> : null}
-      </View>
-      <Text style={styles.rowTitle} numberOfLines={2}>{post.title}</Text>
-      <Text style={styles.rowMeta}>
-        ▲ {formatScore(post.score)}  ·  💬 {formatScore(post.num_comments)}  ·  u/{post.author}
-      </Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.base },
-  tabRow: {
-    flexDirection: 'row',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.default,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.text.primary,
-  },
-  tabText: { ...typography.label, color: colors.text.muted },
-  tabTextActive: { color: colors.text.primary },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 12,
-    backgroundColor: colors.bg.elevated,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  searchIcon: { color: colors.text.muted, fontSize: 16 },
-  input: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text.primary,
-    paddingVertical: 10,
-  },
-  row: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.default,
-    gap: 5,
-  },
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rowSubreddit: { ...typography.label, color: colors.text.primary },
-  rowFlair: { ...typography.caption, color: colors.text.muted },
-  rowTitle: { ...typography.title, color: colors.text.primary, fontWeight: '500' },
-  rowMeta: { ...typography.caption, color: colors.text.muted },
-  emptyContainer: { flexGrow: 1, justifyContent: 'center' },
-  emptyWrap: { alignItems: 'center', gap: 8, paddingHorizontal: 32 },
-  emptyIcon: { fontSize: 32, color: colors.text.muted, marginBottom: 4 },
-  emptyTitle: { ...typography.title, color: colors.text.primary },
-  emptySub: { ...typography.body, color: colors.text.muted, textAlign: 'center' },
-});

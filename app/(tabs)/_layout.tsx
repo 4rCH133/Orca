@@ -1,72 +1,100 @@
+import { useRef, useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { Text, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
+import { StyleSheet, Animated } from 'react-native';
+import { BottomTabBar, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useTheme } from '@/theme/useTheme';
+import { useUIStore } from '@/store/uiStore';
+import {
+  DorsalFinIcon,
+  OrcaEyeIcon,
+  SplashIcon,
+  TailFlukeIcon,
+  OrcaHeadIcon,
+} from '@/components/icons/TabIcons';
 
-function TabIcon({ symbol, focused }: { symbol: string; focused: boolean }) {
+function AnimatedTabBar(props: BottomTabBarProps) {
+  const visible = useUIStore((s) => s.tabBarVisible);
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(translateY, {
+      toValue: visible ? 0 : 90,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [visible, translateY]);
+
   return (
-    <Text style={[styles.icon, focused && styles.iconFocused]}>{symbol}</Text>
+    <Animated.View style={{ transform: [{ translateY }] }}>
+      <BottomTabBar {...props} />
+    </Animated.View>
   );
 }
 
 export default function TabsLayout() {
+  const { theme } = useTheme();
+  const c = theme.colors;
+
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.accent.ocean,
-        tabBarInactiveTintColor: colors.text.muted,
+        tabBarActiveTintColor: c.accent.ocean,
+        tabBarInactiveTintColor: c.text.muted,
         tabBarStyle: {
-          backgroundColor: colors.bg.base,
+          backgroundColor: c.bg.base,
           borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.border.default,
+          borderTopColor: c.border.default,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginBottom: 2 },
-        headerStyle: { backgroundColor: colors.bg.base },
-        headerTintColor: colors.text.primary,
-        headerTitleStyle: { fontWeight: '700', color: colors.text.primary },
+        headerStyle: { backgroundColor: c.bg.base },
+        headerTintColor: c.text.primary,
+        headerTitleStyle: { fontWeight: '700', color: c.text.primary },
         headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
-        name="home"
+        name="home/index"
         options={{
           title: 'Home',
+          tabBarLabel: 'Home',
           headerTitle: '◈ Orca',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="⌂" focused={focused} />,
+          tabBarIcon: ({ color }) => <DorsalFinIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="search/index"
         options={{
           title: 'Search',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="⌕" focused={focused} />,
+          tabBarLabel: 'Search',
+          tabBarIcon: ({ color }) => <OrcaEyeIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="likes"
         options={{
           title: 'Likes',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="◆" focused={focused} />,
+          tabBarLabel: 'Likes',
+          tabBarIcon: ({ color }) => <SplashIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="inbox"
+        name="inbox/index"
         options={{
           title: 'Inbox',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="✉" focused={focused} />,
+          tabBarLabel: 'Inbox',
+          tabBarIcon: ({ color }) => <TailFlukeIcon size={22} color={color} />,
+          tabBarBadge: undefined,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="◉" focused={focused} />,
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color }) => <OrcaHeadIcon size={22} color={color} />,
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: { fontSize: 18, color: colors.text.muted },
-  iconFocused: { color: colors.accent.ocean },
-});
