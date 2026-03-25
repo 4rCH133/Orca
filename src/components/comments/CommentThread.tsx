@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { CommentData } from '@/api/reddit';
 import { VoteButtons } from '@/components/ui/VoteButtons';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { formatTimeAgo } from '@/utils/format';
 import { useThemedStyles } from '@/theme/useTheme';
 
@@ -48,7 +49,7 @@ export function CommentThread({ comment, depth = 0 }: Props) {
 
       {!collapsed && (
         <>
-          <Text style={s.body} selectable>{comment.body}</Text>
+          <MarkdownRenderer content={comment.body} />
           <View style={s.actions}>
             <VoteButtons score={comment.score} likes={comment.likes} onUpvote={() => {}} onDownvote={() => {}} />
           </View>

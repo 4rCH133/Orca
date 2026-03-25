@@ -59,10 +59,14 @@ interface SettingsState {
   feedLayout: FeedLayout;
   autoPlayVideos: boolean;
   blurNSFW: boolean;
+  dimReadPosts: boolean;
+  hideReadPosts: boolean;
   setTheme: (theme: ThemeMode) => void;
   setFeedLayout: (layout: FeedLayout) => void;
   setAutoPlayVideos: (v: boolean) => void;
   setBlurNSFW: (v: boolean) => void;
+  setDimReadPosts: (v: boolean) => void;
+  setHideReadPosts: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -70,6 +74,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   feedLayout: (storage.getString('feedLayout') as FeedLayout) ?? 'card',
   autoPlayVideos: storage.getBoolean('autoPlayVideos') ?? false,
   blurNSFW: storage.getBoolean('blurNSFW') ?? true,
+  dimReadPosts: storage.getBoolean('dimReadPosts') ?? true,
+  hideReadPosts: storage.getBoolean('hideReadPosts') ?? false,
 
   setTheme: (theme) => {
     storage.set('theme', theme);
@@ -87,4 +93,24 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     storage.set('blurNSFW', blurNSFW);
     set({ blurNSFW });
   },
+  setDimReadPosts: (dimReadPosts) => {
+    storage.set('dimReadPosts', dimReadPosts);
+    set({ dimReadPosts });
+  },
+  setHideReadPosts: (hideReadPosts) => {
+    storage.set('hideReadPosts', hideReadPosts);
+    set({ hideReadPosts });
+  },
 }));
+
+// ---- Per-feed layout overrides (standalone MMKV functions, not reactive state) ----
+
+export function getLayoutForFeed(feedKey: string): FeedLayout {
+  const override = storage.getString(`layout:${feedKey}`);
+  if (override === 'card' || override === 'compact' || override === 'list') return override;
+  return useSettingsStore.getState().feedLayout;
+}
+
+export function setLayoutForFeed(feedKey: string, layout: FeedLayout): void {
+  storage.set(`layout:${feedKey}`, layout);
+}

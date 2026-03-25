@@ -181,6 +181,40 @@ export async function getSubredditInfo(subreddit: string, bypassCache = false) {
   return withCache(CacheKeys.subredditInfo(subreddit), fetcher, 600);
 }
 
+export async function getSubredditRules(subreddit: string) {
+  return redditFetch<{ rules: SubredditRule[] }>(`/r/${subreddit}/about/rules`);
+}
+
+export async function subscribeSubreddit(subreddit: string, action: 'sub' | 'unsub') {
+  return redditFetch<void>('/api/subscribe', {
+    method: 'POST',
+    body: new URLSearchParams({ action, sr_name: subreddit }).toString(),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+}
+
+export async function getSubredditFlairs(subreddit: string) {
+  return redditFetch<Array<{ text: string; id: string }>>(`/r/${subreddit}/api/link_flair_v2`);
+}
+
+export async function searchSubredditByFlair(
+  subreddit: string,
+  flair: string,
+  sort: FeedSort = 'new',
+  after?: string,
+  limit = 25,
+) {
+  const params = new URLSearchParams({
+    q: `flair_name:"${flair}"`,
+    restrict_sr: 'on',
+    sort,
+    limit: String(limit),
+    type: 'link',
+    ...(after && { after }),
+  });
+  return redditFetch<RedditListing>(`/r/${subreddit}/search?${params}`);
+}
+
 // ---- Types ----
 
 export interface RedditListing {
@@ -252,4 +286,11 @@ export interface SubredditData {
   banner_img: string;
   user_is_subscriber: boolean;
   over18: boolean;
+}
+
+export interface SubredditRule {
+  short_name: string;
+  description: string;
+  kind: 'link' | 'comment' | 'all';
+  violation_reason: string;
 }

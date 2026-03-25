@@ -12,9 +12,10 @@ interface Props {
   post: PostData;
   onVote?: (id: string, dir: 1 | 0 | -1) => void;
   onSave?: (id: string, save: boolean) => void;
+  isRead?: boolean;
 }
 
-export function PostCard({ post, onVote, onSave }: Props) {
+export function PostCard({ post, onVote, onSave, isRead }: Props) {
   const router = useRouter();
   const { theme } = useTheme();
   const c = theme.colors;
@@ -29,6 +30,7 @@ export function PostCard({ post, onVote, onSave }: Props) {
       paddingBottom: 10,
     },
     cardPressed: { backgroundColor: t.colors.bg.elevated },
+    cardRead: { opacity: 0.6 },
     header: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 5, marginBottom: 7 },
     subreddit: { ...t.typography.label, color: t.colors.accent.ocean },
     dot: { color: t.colors.text.muted, fontSize: 10 },
@@ -61,7 +63,7 @@ export function PostCard({ post, onVote, onSave }: Props) {
 
   return (
     <Pressable
-      style={({ pressed }) => [s.card, pressed && s.cardPressed]}
+      style={({ pressed }) => [s.card, pressed && s.cardPressed, isRead && s.cardRead]}
       onPress={() => router.push(`/post/${post.id}`)}
       android_ripple={{ color: c.bg.elevated }}
     >

@@ -126,5 +126,10 @@ async function initSchema(db: any) {
       INSERT INTO downvoted_posts_fts(downvoted_posts_fts, rowid, id, title, author, subreddit, flair)
         VALUES ('delete', old.rowid, old.id, old.title, old.author, old.subreddit, old.flair);
     END;
+
+    CREATE TABLE IF NOT EXISTS read_posts (
+      post_id TEXT PRIMARY KEY,
+      read_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
   `);
 }

@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import { MessageCircle } from 'lucide-react-native';
@@ -6,14 +7,23 @@ import { usePost } from '@/api/queries/post';
 import { useVotePost, useSavePost } from '@/api/queries/feed';
 import { CommentThread } from '@/components/comments/CommentThread';
 import { VoteButtons } from '@/components/ui/VoteButtons';
+import { PostDetailSkeleton } from '@/components/ui/PostDetailSkeleton';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
+import { markAsRead } from '@/db/readPosts';
 import { formatScore, formatTimeAgo } from '@/utils/format';
 import { useThemedStyles } from '@/theme/useTheme';
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading, isError } = usePost(id);
+  const { data, isLoading, isError, refetch } = usePost(id);
   const { mutate: vote } = useVotePost();
   const { mutate: save } = useSavePost();
+
+  // Mark post as read when viewing
+  useEffect(() => {
+    if (id) markAsRead(id);
+  }, [id]);
 
   const s = useThemedStyles((t) => ({
     container: { flex: 1, backgroundColor: t.colors.bg.base },
@@ -46,19 +56,11 @@ export default function PostScreen() {
   }));
 
   if (isLoading) {
-    return (
-      <View style={s.center}>
-        <ActivityIndicator color={s.accentColor as string} size="large" />
-      </View>
-    );
+    return <PostDetailSkeleton />;
   }
 
   if (isError || !data) {
-    return (
-      <View style={s.center}>
-        <Text style={s.errorText}>Failed to load post.</Text>
-      </View>
-    );
+    return <ErrorState message="Failed to load post." onRetry={() => refetch()} />;
   }
 
   const { post, comments } = data;
@@ -83,7 +85,7 @@ export default function PostScreen() {
         ) : null}
 
         {post.selftext ? (
-          <Text style={s.body} selectable>{post.selftext}</Text>
+          <MarkdownRenderer content={post.selftext} />
         ) : null}
 
         <View style={s.voteRow}>

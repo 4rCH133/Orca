@@ -9,29 +9,47 @@ interface Props {
   onUpvote: () => void;
   onDownvote: () => void;
   vertical?: boolean;
+  compact?: boolean;
 }
 
-export function VoteButtons({ score, likes, onUpvote, onDownvote, vertical }: Props) {
+export function VoteButtons({ score, likes, onUpvote, onDownvote, vertical, compact }: Props) {
   const s = useThemedStyles((t) => ({
     container: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 6,
+      gap: compact ? 4 : 6,
       backgroundColor: t.colors.bg.elevated,
-      borderRadius: 20,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
+      borderRadius: compact ? 14 : 20,
+      paddingHorizontal: compact ? 4 : 8,
+      paddingVertical: compact ? 2 : 4,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.colors.border.default,
     },
     containerVertical: { flexDirection: 'column' as const, gap: 4 },
-    voteBtn: { width: 24, height: 24, borderRadius: 12, alignItems: 'center' as const, justifyContent: 'center' as const },
+    voteBtn: {
+      width: compact ? 20 : 24,
+      height: compact ? 20 : 24,
+      borderRadius: compact ? 10 : 12,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
     upvotedBtn: { backgroundColor: t.colors.accent.orangeDim },
     downvotedBtn: { backgroundColor: '#5B8AF020' },
-    voteBtnText: { color: t.colors.text.muted, fontSize: 14, fontWeight: '700' as const, lineHeight: 18 },
+    voteBtnText: {
+      color: t.colors.text.muted,
+      fontSize: compact ? 12 : 14,
+      fontWeight: '700' as const,
+      lineHeight: compact ? 14 : 18,
+    },
     upvotedText: { color: t.colors.accent.orange },
     downvotedText: { color: t.colors.accent.downvote },
-    score: { ...t.typography.score, color: t.colors.text.primary, minWidth: 28, textAlign: 'center' as const },
+    score: {
+      ...t.typography.score,
+      color: t.colors.text.primary,
+      minWidth: compact ? 20 : 28,
+      textAlign: 'center' as const,
+      fontSize: compact ? 11 : 13,
+    },
     upvotedScore: { color: t.colors.accent.orange },
     downvotedScore: { color: t.colors.accent.downvote },
   }));
