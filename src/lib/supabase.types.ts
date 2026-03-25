@@ -24,7 +24,7 @@ export interface Database {
       user_preferences: {
         Row: {
           user_id: string;
-          theme: 'system' | 'light' | 'dark' | 'oled';
+          theme: 'system' | 'light' | 'dark' | 'oled' | 'matte';
           feed_layout: 'card' | 'compact' | 'list';
           default_sort: string;
           auto_play_video: boolean;

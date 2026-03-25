@@ -12,7 +12,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.text.primary,
+        tabBarActiveTintColor: colors.accent.ocean,
         tabBarInactiveTintColor: colors.text.muted,
         tabBarStyle: {
           backgroundColor: colors.bg.base,
@@ -68,5 +68,5 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   icon: { fontSize: 18, color: colors.text.muted },
-  iconFocused: { color: colors.text.primary },
+  iconFocused: { color: colors.accent.ocean },
 });

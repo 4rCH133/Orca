@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { MessageCircle } from 'lucide-react-native';
 import { PostData } from '@/api/reddit';
 import { VoteButtons } from '@/components/ui/VoteButtons';
 import { formatScore, formatTimeAgo } from '@/utils/format';
@@ -91,7 +92,8 @@ export function PostCard({ post, onVote, onSave }: Props) {
           onDownvote={() => onVote?.(post.id, post.likes === false ? 0 : -1)}
         />
         <View style={styles.footerRight}>
-          <Text style={styles.commentsText}>💬 {formatScore(post.num_comments)}</Text>
+          <MessageCircle size={13} color={colors.text.muted} />
+          <Text style={styles.commentsText}>{formatScore(post.num_comments)}</Text>
           <Pressable
             onPress={(e) => {
               e.stopPropagation();
@@ -121,7 +123,7 @@ const styles = StyleSheet.create({
   },
   cardPressed: { backgroundColor: colors.bg.elevated },
   header: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 7 },
-  subreddit: { ...typography.label, color: colors.text.primary },
+  subreddit: { ...typography.label, color: colors.accent.ocean },
   dot: { color: colors.text.muted, fontSize: 10 },
   meta: { ...typography.caption, color: colors.text.muted, flex: 1 },
   mainRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
@@ -149,9 +151,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  commentsText: { ...typography.caption, color: colors.text.muted },
+  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  commentsText: { ...typography.caption, color: colors.text.muted, marginLeft: 4 },
   saveBtn: {},
   saveIcon: { color: colors.text.muted, fontSize: 15 },
-  saveIconActive: { color: colors.accent.primary },
+  saveIconActive: { color: colors.accent.save },
 });

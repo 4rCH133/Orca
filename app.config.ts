@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#FF4500', // Reddit orange
+    backgroundColor: '#0D1117', // Orca midnight
   },
   ios: {
     supportsTablet: true,

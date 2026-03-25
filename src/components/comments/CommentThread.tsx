@@ -3,9 +3,9 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { CommentData } from '@/api/reddit';
 import { VoteButtons } from '@/components/ui/VoteButtons';
 import { formatScore, formatTimeAgo } from '@/utils/format';
+import { colors } from '@/theme/colors';
 
 const INDENT = 12;
-const INDENT_COLORS = ['#FF4500', '#7193FF', '#46D160', '#FFD635', '#FF585B', '#818384'];
 
 interface Props {
   comment: CommentData;
@@ -22,7 +22,7 @@ export function CommentThread({ comment, depth = 0 }: Props) {
           .map((c) => c.data as CommentData)
       : [];
 
-  const indentColor = INDENT_COLORS[depth % INDENT_COLORS.length];
+  const indentColor = colors.depth[depth % colors.depth.length];
 
   return (
     <View style={[styles.container, depth > 0 && { marginLeft: INDENT, borderLeftWidth: 2, borderLeftColor: indentColor + '40', paddingLeft: 8 }]}>
@@ -65,10 +65,10 @@ export function CommentThread({ comment, depth = 0 }: Props) {
 const styles = StyleSheet.create({
   container: { paddingTop: 10 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  author: { color: '#D7DADC', fontWeight: '700', fontSize: 13 },
-  authorOP: { color: '#46D160' },
-  time: { color: '#818384', fontSize: 12 },
-  collapsedHint: { color: '#818384', fontSize: 12 },
-  body: { color: '#D7DADC', fontSize: 15, lineHeight: 22 },
+  author: { color: colors.text.primary, fontWeight: '700', fontSize: 13 },
+  authorOP: { color: colors.accent.green },
+  time: { color: colors.text.secondary, fontSize: 12 },
+  collapsedHint: { color: colors.text.muted, fontSize: 12 },
+  body: { color: colors.text.primary, fontSize: 15, lineHeight: 22 },
   actions: { flexDirection: 'row', marginTop: 6 },
 });

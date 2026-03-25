@@ -1,10 +1,12 @@
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Image } from 'expo-image';
+import { MessageCircle } from 'lucide-react-native';
 import { usePost } from '@/api/queries/post';
 import { CommentThread } from '@/components/comments/CommentThread';
 import { VoteButtons } from '@/components/ui/VoteButtons';
 import { formatScore, formatTimeAgo } from '@/utils/format';
+import { colors } from '@/theme/colors';
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,7 +15,7 @@ export default function PostScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#FF4500" size="large" />
+        <ActivityIndicator color={colors.accent.ocean} size="large" />
       </View>
     );
   }
@@ -66,7 +68,10 @@ export default function PostScreen() {
         {/* Vote row */}
         <View style={styles.voteRow}>
           <VoteButtons score={post.score} likes={post.likes} onUpvote={() => {}} onDownvote={() => {}} />
-          <Text style={styles.commentsCount}>💬 {formatScore(post.num_comments)} comments</Text>
+          <View style={styles.commentsRow}>
+            <MessageCircle size={14} color={colors.text.secondary} />
+            <Text style={styles.commentsCount}>{formatScore(post.num_comments)} comments</Text>
+          </View>
         </View>
 
         {/* Divider */}
@@ -86,28 +91,29 @@ export default function PostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0B' },
+  container: { flex: 1, backgroundColor: colors.bg.base },
   content: { padding: 14 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A0A0B' },
-  errorText: { color: '#818384' },
-  subreddit: { color: '#FF4500', fontWeight: '700', fontSize: 13, marginBottom: 2 },
-  meta: { color: '#818384', fontSize: 12, marginBottom: 10 },
-  title: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', lineHeight: 26, marginBottom: 10 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg.base },
+  errorText: { color: colors.text.secondary },
+  subreddit: { color: colors.accent.ocean, fontWeight: '700', fontSize: 13, marginBottom: 2 },
+  meta: { color: colors.text.secondary, fontSize: 12, marginBottom: 10 },
+  title: { color: colors.text.primary, fontSize: 18, fontWeight: '700', lineHeight: 26, marginBottom: 10 },
   flairBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#1A1A1B',
+    backgroundColor: colors.bg.input,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#343536',
+    borderColor: colors.border.default,
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginBottom: 10,
   },
-  flairText: { color: '#818384', fontSize: 11 },
-  image: { width: '100%', height: 300, borderRadius: 8, marginBottom: 12, backgroundColor: '#111' },
-  body: { color: '#D7DADC', fontSize: 15, lineHeight: 24, marginBottom: 14 },
+  flairText: { color: colors.text.secondary, fontSize: 11 },
+  image: { width: '100%', height: 300, borderRadius: 8, marginBottom: 12, backgroundColor: colors.bg.elevated },
+  body: { color: colors.text.primary, fontSize: 15, lineHeight: 24, marginBottom: 14 },
   voteRow: { flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 14 },
-  commentsCount: { color: '#818384', fontSize: 14 },
-  divider: { height: 1, backgroundColor: '#1E1E1F', marginBottom: 4 },
-  noComments: { color: '#818384', textAlign: 'center', marginTop: 24 },
+  commentsRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  commentsCount: { color: colors.text.secondary, fontSize: 14 },
+  divider: { height: 1, backgroundColor: colors.bg.subtle, marginBottom: 4 },
+  noComments: { color: colors.text.secondary, textAlign: 'center', marginTop: 24 },
 });

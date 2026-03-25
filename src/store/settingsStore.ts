@@ -3,8 +3,18 @@ import { MMKV } from 'react-native-mmkv';
 
 const storage = new MMKV({ id: 'settings' });
 
-type Theme = 'system' | 'light' | 'dark' | 'oled';
+type Theme = 'system' | 'light' | 'dark' | 'matte';
 type FeedLayout = 'card' | 'compact' | 'list';
+
+// Migrate legacy 'oled' theme value to 'matte'
+function loadTheme(): Theme {
+  const stored = storage.getString('theme');
+  if (stored === 'oled') {
+    storage.set('theme', 'matte');
+    return 'matte';
+  }
+  return (stored as Theme) ?? 'system';
+}
 
 interface SettingsState {
   theme: Theme;
@@ -18,7 +28,7 @@ interface SettingsState {
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  theme: (storage.getString('theme') as Theme) ?? 'system',
+  theme: loadTheme(),
   feedLayout: (storage.getString('feedLayout') as FeedLayout) ?? 'card',
   autoPlayVideos: storage.getBoolean('autoPlayVideos') ?? false,
   blurNSFW: storage.getBoolean('blurNSFW') ?? true,
