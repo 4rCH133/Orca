@@ -54,8 +54,8 @@ describe('liked_posts', () => {
       expect.stringContaining('INSERT OR REPLACE INTO liked_posts'),
       expect.arrayContaining(['test123', 'Test Post Title', 'testauthor', 'reactnative']),
     );
-    // Verify 11 params total
-    expect(mockDb.runAsync.mock.calls[0][1]).toHaveLength(11);
+    // Verify 12 params total (including body_snippet)
+    expect(mockDb.runAsync.mock.calls[0][1]).toHaveLength(12);
   });
 
   it('removeLikedPost calls DELETE with post ID', async () => {

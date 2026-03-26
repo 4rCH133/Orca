@@ -1,34 +1,26 @@
 /**
- * Bulk sync: fetch user's upvoted/downvoted/saved history from Reddit API
- * and backfill into local SQLite for offline search.
+ * Activity sync — fetches user's upvoted/downvoted/saved history from Reddit API
+ * and indexes into local SQLite for offline search.
  *
- * Reddit API returns max 100 items per request, paginated with `after` cursor.
- * Reddit limits access to the last ~1000 items per category.
- *
- * This should be called:
- * - On first login (initial sync)
- * - Periodically in background (incremental sync)
- * - When user manually triggers sync from settings
+ * Rate limited: 2-second delay between requests to stay within Reddit's 60 req/min.
+ * Supports full sync (all pages) and incremental sync (first 2 pages only).
+ * Reports progress via syncStore for UI display.
  */
 
 import { getUpvotedPosts, getDownvotedPosts, getSavedPosts, PostData, RedditListing } from '@/api/reddit';
 import { upsertLikedPost, upsertDownvotedPost, upsertSavedPost } from './likes';
+import { useSyncStore } from '@/store/syncStore';
 import { MOCK_MODE } from '@/dev';
 
-interface SyncProgress {
-  upvoted: number;
-  downvoted: number;
-  saved: number;
-  done: boolean;
-}
+const RATE_LIMIT_DELAY = 2000; // 2s between API requests
 
 /**
- * Paginate through a Reddit listing endpoint, collecting all post items.
- * Stops when there's no `after` cursor or we hit maxPages (safety limit).
+ * Paginate through a Reddit listing endpoint with rate limiting.
  */
 async function fetchAllPages(
   fetcher: (after?: string) => Promise<RedditListing>,
   maxPages = 10,
+  onPage?: (pageNum: number) => void,
 ): Promise<PostData[]> {
   const posts: PostData[] = [];
   let after: string | undefined;
@@ -39,65 +31,94 @@ async function fetchAllPages(
       .filter((c) => c.kind === 't3')
       .map((c) => c.data as PostData);
     posts.push(...items);
+    onPage?.(page + 1);
 
     if (!listing.data.after) break;
     after = listing.data.after;
+
+    // Rate limit: wait between requests
+    if (page < maxPages - 1 && listing.data.after) {
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY));
+    }
   }
 
   return posts;
 }
 
+type SyncPhase = 'upvoted' | 'downvoted' | 'saved';
+
 /**
- * Full sync of user's Reddit activity into local SQLite.
- * Returns count of items synced per category.
+ * Full sync — fetches all available pages (up to maxPages) for each category.
  */
 export async function syncUserActivity(
   username: string,
-  onProgress?: (progress: SyncProgress) => void,
-): Promise<SyncProgress> {
+  maxPages = 10,
+): Promise<{ upvoted: number; downvoted: number; saved: number }> {
   if (MOCK_MODE) {
-    return { upvoted: 0, downvoted: 0, saved: 0, done: true };
+    useSyncStore.getState().setSyncComplete({ upvoted: 0, downvoted: 0, saved: 0 });
+    return { upvoted: 0, downvoted: 0, saved: 0 };
   }
 
-  const progress: SyncProgress = { upvoted: 0, downvoted: 0, saved: 0, done: false };
+  const store = useSyncStore.getState();
+  store.startSync();
+  const totals = { upvoted: 0, downvoted: 0, saved: 0 };
 
-  // Sync upvoted posts
+  // Sync upvoted
   try {
-    const upvoted = await fetchAllPages((after) => getUpvotedPosts(username, after, 100));
-    for (const post of upvoted) {
-      await upsertLikedPost(post);
+    const upvoted = await fetchAllPages(
+      (after) => getUpvotedPosts(username, after, 100),
+      maxPages,
+      (page) => store.setProgress(page, maxPages, 'upvoted'),
+    );
+    for (const post of upvoted) await upsertLikedPost(post);
+    totals.upvoted = upvoted.length;
+  } catch (e: any) {
+    if (e?.message?.includes('403')) {
+      console.warn('[Orca] Upvote history is private — skipping');
+    } else {
+      console.warn('[Orca] Sync upvoted failed:', e);
     }
-    progress.upvoted = upvoted.length;
-    onProgress?.({ ...progress });
-  } catch (e) {
-    console.warn('[Orca] Sync upvoted failed:', e);
   }
 
-  // Sync downvoted posts
+  // Sync downvoted
   try {
-    const downvoted = await fetchAllPages((after) => getDownvotedPosts(username, after, 100));
-    for (const post of downvoted) {
-      await upsertDownvotedPost(post);
+    const downvoted = await fetchAllPages(
+      (after) => getDownvotedPosts(username, after, 100),
+      maxPages,
+      (page) => store.setProgress(page, maxPages, 'downvoted'),
+    );
+    for (const post of downvoted) await upsertDownvotedPost(post);
+    totals.downvoted = downvoted.length;
+  } catch (e: any) {
+    if (e?.message?.includes('403')) {
+      console.warn('[Orca] Downvote history is private — skipping');
+    } else {
+      console.warn('[Orca] Sync downvoted failed:', e);
     }
-    progress.downvoted = downvoted.length;
-    onProgress?.({ ...progress });
-  } catch (e) {
-    console.warn('[Orca] Sync downvoted failed:', e);
   }
 
-  // Sync saved posts
+  // Sync saved
   try {
-    const saved = await fetchAllPages((after) => getSavedPosts(username, after, 100));
-    for (const post of saved) {
-      await upsertSavedPost(post);
-    }
-    progress.saved = saved.length;
-    onProgress?.({ ...progress });
-  } catch (e) {
+    const saved = await fetchAllPages(
+      (after) => getSavedPosts(username, after, 100),
+      maxPages,
+      (page) => store.setProgress(page, maxPages, 'saved'),
+    );
+    for (const post of saved) await upsertSavedPost(post);
+    totals.saved = saved.length;
+  } catch (e: any) {
     console.warn('[Orca] Sync saved failed:', e);
   }
 
-  progress.done = true;
-  onProgress?.(progress);
-  return progress;
+  store.setSyncComplete(totals);
+  console.log(`[Orca] Sync complete: ${totals.upvoted} upvoted, ${totals.downvoted} downvoted, ${totals.saved} saved`);
+  return totals;
+}
+
+/**
+ * Incremental sync — fetches only first 2 pages per category (most recent ~50 items).
+ * Used for periodic background updates every 30 minutes.
+ */
+export async function syncIncrementalActivity(username: string): Promise<void> {
+  await syncUserActivity(username, 2);
 }

@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { startRedditOAuth, getStoredToken, refreshAccessToken, logout } from '@/api/auth';
 import { setAccessToken, getMe, RedditUser } from '@/api/reddit';
 import { upsertSupabaseUser, ensureUserPreferences } from '@/lib/supabase';
-import { syncUserActivity } from '@/db/sync';
+import { syncUserActivity, syncIncrementalActivity } from '@/db/sync';
+import { useSyncStore } from '@/store/syncStore';
 import { MOCK_MODE, mockUser } from '@/dev';
 
 interface AuthState {
@@ -29,12 +30,14 @@ async function postLoginSync(user: RedditUser, set: (s: Partial<AuthState>) => v
   }
 
   // 2. Backfill local SQLite with Reddit vote/save history (for offline search)
-  // Runs in background — doesn't block the UI
-  syncUserActivity(user.name, (progress) => {
-    if (progress.done) {
-      console.log(`[Orca] Activity sync complete: ${progress.upvoted} upvoted, ${progress.downvoted} downvoted, ${progress.saved} saved`);
-    }
-  }).catch((e) => console.warn('[Orca] Activity sync failed:', e));
+  // Uses syncStore for progress tracking; runs in background
+  syncUserActivity(user.name).catch((e) => {
+    console.warn('[Orca] Activity sync failed:', e);
+    useSyncStore.getState().setError('Sync failed — will retry later');
+  });
+
+  // 3. Set up incremental sync every 30 minutes when app foregrounds
+  // (AppState listener should be set up once, not on every login)
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -99,6 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     if (!MOCK_MODE) await logout();
+    useSyncStore.getState().reset();
     set({ user: null, supabaseUserId: null, isAuthenticated: false });
   },
 }));

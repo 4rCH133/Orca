@@ -183,14 +183,27 @@ export async function getMoreChildren(
 
 // ---- Search ----
 
-export async function searchReddit(query: string, after?: string, limit = 25) {
+export async function searchReddit(
+  query: string,
+  after?: string,
+  limit = 25,
+  type: 'link' | 'sr' | 'user' = 'link',
+  sort: 'relevance' | 'hot' | 'top' | 'new' | 'comments' = 'relevance',
+  time: TopTimeframe = 'all',
+) {
   const params = new URLSearchParams({
     q: query,
     limit: String(limit),
-    type: 'link,sr,user',
+    type,
+    sort,
+    t: time,
     ...(after && { after }),
   });
   return redditFetch<RedditListing>(`/search?${params}`);
+}
+
+export async function getPopularSubreddits(after?: string, limit = 10) {
+  return redditFetch<RedditListing>(`/subreddits/popular?limit=${limit}${after ? `&after=${after}` : ''}`);
 }
 
 export async function searchSubreddit(subreddit: string, query: string, after?: string) {
