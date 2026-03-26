@@ -103,11 +103,15 @@ export async function getSubredditFeed(
   subreddit: string,
   sort: FeedSort = 'hot',
   after?: string,
-  limit = 25
+  limit = 25,
+  bypassCache = false,
 ) {
-  return redditFetch<RedditListing>(
-    `/r/${subreddit}/${sort}?limit=${limit}${after ? `&after=${after}` : ''}`
-  );
+  const fetcher = () =>
+    redditFetch<RedditListing>(
+      `/r/${subreddit}/${sort}?limit=${limit}${after ? `&after=${after}` : ''}`,
+    );
+  if (bypassCache) return fetcher();
+  return withCache(CacheKeys.subreddit(subreddit, sort, after), fetcher, 120);
 }
 
 export async function getPost(postId: string, bypassCache = false) {
