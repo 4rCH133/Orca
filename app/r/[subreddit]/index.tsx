@@ -17,6 +17,7 @@ import { PostCardCompact } from '@/components/feed/PostCardCompact';
 import { PostCardList } from '@/components/feed/PostCardList';
 import { FeedSkeleton } from '@/components/ui/FeedSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { FeedSort, PostData } from '@/api/reddit';
 import { formatScore } from '@/utils/format';
 import { useTheme, useThemedStyles } from '@/theme/useTheme';
@@ -248,6 +249,9 @@ export default function SubredditScreen() {
         }
         ListFooterComponent={
           feed.isFetchingNextPage ? <ActivityIndicator color={theme.colors.accent.ocean} style={{ margin: 20 }} /> : null
+        }
+        ListEmptyComponent={
+          !feed.isLoading ? <EmptyState icon="⌕" title="No posts" subtitle="This subreddit has no posts yet." /> : null
         }
       />
     </View>

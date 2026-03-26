@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { searchLikedPosts, searchSavedPosts, searchDownvotedPosts, LocalPost } from '@/db/likes';
@@ -9,10 +9,11 @@ import { formatScore, formatTimeAgo } from '@/utils/format';
 type Tab = 'upvoted' | 'downvoted' | 'saved';
 
 export default function LikesScreen() {
-  const [tab, setTab] = useState<Tab>('liked');
+  const [tab, setTab] = useState<Tab>('upvoted');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LocalPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const s = useThemedStyles((t) => ({
     container: { flex: 1, backgroundColor: t.colors.bg.base },
@@ -90,7 +91,11 @@ export default function LikesScreen() {
           placeholder={`Search ${tab} posts…`}
           placeholderTextColor={s.muted as string}
           value={query}
-          onChangeText={(q) => { setQuery(q); runSearch(q, tab); }}
+          onChangeText={(q) => {
+            setQuery(q);
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => runSearch(q, tab), 200);
+          }}
           clearButtonMode="while-editing"
           autoCapitalize="none"
           autoCorrect={false}

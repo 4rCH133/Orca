@@ -1,4 +1,4 @@
-import { useSettingsStore, getLayoutForFeed, setLayoutForFeed } from '../settingsStore';
+import { useSettingsStore, getLayoutForFeed, setLayoutForFeed, getDraft, saveDraft, clearDraft, getDismissedTips, dismissTip, getSortForFeed, setSortForFeed } from '../settingsStore';
 
 describe('settingsStore', () => {
   beforeEach(() => {
@@ -61,5 +61,59 @@ describe('per-feed layout overrides', () => {
     setLayoutForFeed('reactnative', 'list');
     expect(getLayoutForFeed('home')).toBe('compact');
     expect(getLayoutForFeed('reactnative')).toBe('list');
+  });
+});
+
+describe('comment draft storage', () => {
+  it('returns undefined when no draft exists', () => {
+    expect(getDraft('parent_new')).toBeUndefined();
+  });
+
+  it('saves and retrieves a draft', () => {
+    saveDraft('parent1', 'my reply text');
+    expect(getDraft('parent1')).toBe('my reply text');
+  });
+
+  it('clears a draft', () => {
+    saveDraft('parent2', 'some text');
+    clearDraft('parent2');
+    // clearDraft sets empty string
+    expect(getDraft('parent2')).toBe('');
+  });
+});
+
+describe('tutorial tip dismissal', () => {
+  it('returns empty array initially', () => {
+    expect(getDismissedTips()).toEqual([]);
+  });
+
+  it('dismissing a tip adds it to the list', () => {
+    dismissTip('swipe_vote');
+    expect(getDismissedTips()).toContain('swipe_vote');
+  });
+
+  it('dismissing same tip twice does not duplicate', () => {
+    dismissTip('themes');
+    dismissTip('themes');
+    const tips = getDismissedTips();
+    expect(tips.filter((t: string) => t === 'themes')).toHaveLength(1);
+  });
+});
+
+describe('sort persistence', () => {
+  it('returns "best" as default sort', () => {
+    expect(getSortForFeed('home')).toBe('best');
+  });
+
+  it('persists and retrieves sort preference', () => {
+    setSortForFeed('home', 'new');
+    expect(getSortForFeed('home')).toBe('new');
+  });
+
+  it('different feeds have independent sorts', () => {
+    setSortForFeed('home', 'hot');
+    setSortForFeed('space', 'top');
+    expect(getSortForFeed('home')).toBe('hot');
+    expect(getSortForFeed('space')).toBe('top');
   });
 });

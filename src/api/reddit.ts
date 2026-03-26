@@ -22,8 +22,12 @@ export function setAccessToken(token: string) {
 }
 
 async function redditFetch<T>(path: string, options?: RequestInit, _isRetry = false): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
   const response = await fetch(`https://oauth.reddit.com${path}`, {
     ...options,
+    signal: controller.signal,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'User-Agent': 'Orca/1.0.0 (by /u/4rCH133)',
@@ -31,6 +35,8 @@ async function redditFetch<T>(path: string, options?: RequestInit, _isRetry = fa
       ...options?.headers,
     },
   });
+
+  clearTimeout(timeout);
 
   // Parse rate limit headers from every response (including 401s)
   const rlRemaining = response.headers.get('X-Ratelimit-Remaining');
@@ -118,12 +124,61 @@ export async function votePost(id: string, direction: 1 | 0 | -1) {
   });
 }
 
+export async function voteComment(id: string, direction: 1 | 0 | -1) {
+  return redditFetch('/api/vote', {
+    method: 'POST',
+    body: new URLSearchParams({ id: `t1_${id}`, dir: String(direction) }).toString(),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+}
+
 export async function savePost(id: string, save: boolean) {
   return redditFetch(`/api/${save ? 'save' : 'unsave'}`, {
     method: 'POST',
     body: new URLSearchParams({ id: `t3_${id}` }).toString(),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
   });
+}
+
+// ---- Comments ----
+
+export async function submitComment(parentFullname: string, body: string) {
+  const response = await redditFetch<{ json: { data: { things: Array<{ data: CommentData }> } } }>(
+    '/api/comment',
+    {
+      method: 'POST',
+      body: new URLSearchParams({
+        api_type: 'json',
+        thing_id: parentFullname,
+        text: body,
+      }).toString(),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    },
+  );
+  return response.json.data.things[0].data;
+}
+
+export async function getMoreChildren(
+  postId: string,
+  childIds: string[],
+  sort = 'confidence',
+) {
+  const response = await redditFetch<{ json: { data: { things: Array<{ kind: string; data: CommentData }> } } }>(
+    '/api/morechildren',
+    {
+      method: 'POST',
+      body: new URLSearchParams({
+        api_type: 'json',
+        link_id: `t3_${postId}`,
+        children: childIds.join(','),
+        sort,
+      }).toString(),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    },
+  );
+  return response.json.data.things
+    .filter((t) => t.kind === 't1')
+    .map((t) => t.data);
 }
 
 // ---- Search ----
@@ -262,6 +317,7 @@ export interface CommentData {
   depth: number;
   likes: boolean | null;
   is_submitter: boolean;
+  edited: false | number;
 }
 
 export interface RedditUser {

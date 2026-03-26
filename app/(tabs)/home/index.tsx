@@ -15,7 +15,7 @@ import type { FeedSort, PostData } from '@/api/reddit';
 import { useTheme, useThemedStyles } from '@/theme/useTheme';
 import { useUIStore } from '@/store/uiStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { getLayoutForFeed, setLayoutForFeed } from '@/store/settingsStore';
+import { getLayoutForFeed, setLayoutForFeed, getSortForFeed, setSortForFeed } from '@/store/settingsStore';
 
 type FeedLayout = 'card' | 'compact' | 'list';
 const SORTS: FeedSort[] = ['best', 'hot', 'new', 'top', 'rising'];
@@ -33,7 +33,7 @@ const ESTIMATED_SIZE: Record<FeedLayout, number> = {
 };
 
 export default function HomeScreen() {
-  const [sort, setSort] = useState<FeedSort>('best');
+  const [sort, setSort] = useState<FeedSort>(() => getSortForFeed('home') as FeedSort);
   const [layout, setLayout] = useState<FeedLayout>(() => getLayoutForFeed('home'));
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const dimReadPosts = useSettingsStore((s) => s.dimReadPosts);
@@ -128,7 +128,7 @@ export default function HomeScreen() {
         {SORTS.map((s) => (
           <Pressable
             key={s}
-            onPress={() => setSort(s)}
+            onPress={() => { setSort(s); setSortForFeed('home', s); }}
             style={[styles.sortPill, sort === s && styles.sortPillActive]}
           >
             <Text style={[styles.sortLabel, sort === s && styles.sortLabelActive]}>

@@ -1,4 +1,4 @@
-import { setAccessToken, getFeed } from '../reddit';
+import { setAccessToken, getFeed, votePost, voteComment, savePost, submitComment, getMoreChildren } from '../reddit';
 import { useRateLimitStore } from '@/store/rateLimitStore';
 
 // Mock auth module to control refreshAccessToken
@@ -179,5 +179,71 @@ describe('Reddit API client', () => {
 
     await getFeed('hot', 't3_abc123');
     expect(fetchSpy.mock.calls[0][0]).toBe('https://oauth.reddit.com/hot?limit=25&after=t3_abc123');
+  });
+});
+
+describe('Reddit API mutations', () => {
+  let fetchSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    fetchSpy = jest.spyOn(global, 'fetch');
+    setAccessToken('test-token');
+  });
+
+  afterEach(() => fetchSpy.mockRestore());
+
+  const mockOk = () => fetchSpy.mockResolvedValueOnce({
+    ok: true, status: 200, headers: new Headers(),
+    json: () => Promise.resolve({}),
+  });
+
+  it('votePost sends body with t3_ prefix', async () => {
+    mockOk();
+    await votePost('abc123', 1);
+    const body = fetchSpy.mock.calls[0][1]?.body;
+    expect(body).toContain('id=t3_abc123');
+    expect(body).toContain('dir=1');
+  });
+
+  it('voteComment sends body with t1_ prefix', async () => {
+    mockOk();
+    await voteComment('def456', -1);
+    const body = fetchSpy.mock.calls[0][1]?.body;
+    expect(body).toContain('id=t1_def456');
+    expect(body).toContain('dir=-1');
+  });
+
+  it('savePost(id, true) calls /api/save', async () => {
+    mockOk();
+    await savePost('xyz', true);
+    expect(fetchSpy.mock.calls[0][0]).toContain('/api/save');
+  });
+
+  it('savePost(id, false) calls /api/unsave', async () => {
+    mockOk();
+    await savePost('xyz', false);
+    expect(fetchSpy.mock.calls[0][0]).toContain('/api/unsave');
+  });
+
+  it('submitComment sends thing_id and text', async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok: true, status: 200, headers: new Headers(),
+      json: () => Promise.resolve({ json: { data: { things: [{ data: { id: 'new1' } }] } } }),
+    });
+    await submitComment('t3_post1', 'Hello world');
+    const body = fetchSpy.mock.calls[0][1]?.body;
+    expect(body).toContain('thing_id=t3_post1');
+    expect(body).toContain('text=Hello+world');
+  });
+
+  it('getMoreChildren sends link_id and comma-joined children', async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok: true, status: 200, headers: new Headers(),
+      json: () => Promise.resolve({ json: { data: { things: [] } } }),
+    });
+    await getMoreChildren('post1', ['a', 'b', 'c']);
+    const body = fetchSpy.mock.calls[0][1]?.body;
+    expect(body).toContain('link_id=t3_post1');
+    expect(body).toContain('children=a%2Cb%2Cc');
   });
 });

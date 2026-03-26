@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from 'react-native';
 import { Image } from 'expo-image';
 import { useAuthStore } from '@/store/authStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useTheme } from '@/theme/useTheme';
 import { useThemedStyles } from '@/theme/useTheme';
+import { TutorialSection } from '@/components/ui/TutorialSection';
 import { formatScore } from '@/utils/format';
 import type { ThemeMode, ResolvedTheme } from '@/theme/tokens';
 
@@ -13,6 +15,34 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; description: string }[] =
   { mode: 'darkMatte', label: 'Dark Matte', description: '#0D1117' },
   { mode: 'amoledBlack', label: 'AMOLED Black', description: '#000000' },
 ];
+
+function SettingToggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: (v: boolean) => void }) {
+  const { theme } = useTheme();
+  const s = useThemedStyles((t) => ({
+    row: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between' as const,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      backgroundColor: t.colors.bg.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.colors.border.default,
+    },
+    label: { ...t.typography.body, color: t.colors.text.primary, flex: 1 },
+  }));
+  return (
+    <View style={s.row}>
+      <Text style={s.label}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onToggle}
+        trackColor={{ false: theme.colors.bg.subtle, true: theme.colors.accent.ocean + '60' }}
+        thumbColor={value ? theme.colors.accent.ocean : theme.colors.text.muted}
+      />
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
@@ -99,7 +129,7 @@ export default function ProfileScreen() {
   const avatar = user.icon_img?.replace(/\?.*/, '');
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       {/* Profile info */}
       <View style={styles.profileSection}>
         {avatar ? (
@@ -126,6 +156,9 @@ export default function ProfileScreen() {
       </View>
 
       {/* Theme picker */}
+      {/* Tutorial tips for first-time users */}
+      <TutorialSection />
+
       <Text style={styles.sectionTitle}>APPEARANCE</Text>
       {THEME_OPTIONS.map((opt) => (
         <Pressable
@@ -141,10 +174,17 @@ export default function ProfileScreen() {
         </Pressable>
       ))}
 
+      {/* Feed settings */}
+      <Text style={styles.sectionTitle}>FEED</Text>
+      <SettingToggle label="Dim read posts" value={useSettingsStore((s) => s.dimReadPosts)} onToggle={useSettingsStore((s) => s.setDimReadPosts)} />
+      <SettingToggle label="Hide read posts on refresh" value={useSettingsStore((s) => s.hideReadPosts)} onToggle={useSettingsStore((s) => s.setHideReadPosts)} />
+      <SettingToggle label="Blur NSFW content" value={useSettingsStore((s) => s.blurNSFW)} onToggle={useSettingsStore((s) => s.setBlurNSFW)} />
+      <SettingToggle label="Highlight new comments" value={useSettingsStore((s) => s.showNewComments)} onToggle={useSettingsStore((s) => s.setShowNewComments)} />
+
       {/* Sign out */}
       <Pressable style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Sign Out</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }

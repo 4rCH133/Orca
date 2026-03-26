@@ -10,9 +10,10 @@ interface Props {
   onDownvote: () => void;
   vertical?: boolean;
   compact?: boolean;
+  disabled?: boolean;
 }
 
-export function VoteButtons({ score, likes, onUpvote, onDownvote, vertical, compact }: Props) {
+export function VoteButtons({ score, likes, onUpvote, onDownvote, vertical, compact, disabled }: Props) {
   const s = useThemedStyles((t) => ({
     container: {
       flexDirection: 'row' as const,
@@ -54,18 +55,33 @@ export function VoteButtons({ score, likes, onUpvote, onDownvote, vertical, comp
     downvotedScore: { color: t.colors.accent.downvote },
   }));
 
-  const handleUpvote = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onUpvote(); };
-  const handleDownvote = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onDownvote(); };
+  const handleUpvote = () => { if (disabled) return; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onUpvote(); };
+  const handleDownvote = () => { if (disabled) return; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onDownvote(); };
 
   return (
-    <View style={[s.container, vertical && s.containerVertical]}>
-      <Pressable onPress={handleUpvote} hitSlop={10} style={[s.voteBtn, likes === true && s.upvotedBtn]}>
+    <View style={[s.container, vertical && s.containerVertical, disabled && { opacity: 0.4 }]}>
+      <Pressable
+        onPress={handleUpvote}
+        hitSlop={10}
+        style={[s.voteBtn, likes === true && s.upvotedBtn]}
+        accessibilityLabel={`Upvote, ${likes === true ? 'currently upvoted' : 'not voted'}, ${formatScore(score)} points`}
+        accessibilityRole="button"
+      >
         <Text style={[s.voteBtnText, likes === true && s.upvotedText]}>+</Text>
       </Pressable>
-      <Text style={[s.score, likes === true && s.upvotedScore, likes === false && s.downvotedScore]}>
+      <Text
+        style={[s.score, likes === true && s.upvotedScore, likes === false && s.downvotedScore]}
+        accessibilityLabel={`${formatScore(score)} points`}
+      >
         {formatScore(score)}
       </Text>
-      <Pressable onPress={handleDownvote} hitSlop={10} style={[s.voteBtn, likes === false && s.downvotedBtn]}>
+      <Pressable
+        onPress={handleDownvote}
+        hitSlop={10}
+        style={[s.voteBtn, likes === false && s.downvotedBtn]}
+        accessibilityLabel={`Downvote, ${likes === false ? 'currently downvoted' : 'not voted'}, ${formatScore(score)} points`}
+        accessibilityRole="button"
+      >
         <Text style={[s.voteBtnText, likes === false && s.downvotedText]}>−</Text>
       </Pressable>
     </View>

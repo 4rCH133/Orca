@@ -38,6 +38,7 @@ export function PostCardCompact({ post, onVote, onSave, isRead }: Props) {
     subreddit: { ...t.typography.caption, color: t.colors.accent.ocean },
     dot: { color: t.colors.text.muted, fontSize: 8 },
     meta: { ...t.typography.caption, color: t.colors.text.muted },
+    saveActive: { color: t.colors.accent.save },
   }));
 
   return (
@@ -63,6 +64,10 @@ export function PostCardCompact({ post, onVote, onSave, isRead }: Props) {
         <Text style={s.meta}>{formatTimeAgo(post.created_utc)}</Text>
         <Text style={s.dot}>·</Text>
         <Text style={s.meta}>{formatScore(post.num_comments)} comments</Text>
+        <Text style={s.dot}>·</Text>
+        <Pressable onPress={(e) => { e.stopPropagation(); onSave?.(post.id, !post.saved); }} hitSlop={8}>
+          <Text style={[s.meta, post.saved && s.saveActive]}>{post.saved ? '◆' : '◇'}</Text>
+        </Pressable>
       </View>
     </Pressable>
   );

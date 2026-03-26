@@ -131,5 +131,11 @@ async function initSchema(db: any) {
       post_id TEXT PRIMARY KEY,
       read_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+
+    CREATE TABLE IF NOT EXISTS visited_posts (
+      post_id TEXT PRIMARY KEY,
+      visited_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      known_comment_ids TEXT NOT NULL DEFAULT '[]'
+    );
   `);
 }

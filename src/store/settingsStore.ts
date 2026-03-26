@@ -61,12 +61,14 @@ interface SettingsState {
   blurNSFW: boolean;
   dimReadPosts: boolean;
   hideReadPosts: boolean;
+  showNewComments: boolean;
   setTheme: (theme: ThemeMode) => void;
   setFeedLayout: (layout: FeedLayout) => void;
   setAutoPlayVideos: (v: boolean) => void;
   setBlurNSFW: (v: boolean) => void;
   setDimReadPosts: (v: boolean) => void;
   setHideReadPosts: (v: boolean) => void;
+  setShowNewComments: (v: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -76,6 +78,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   blurNSFW: storage.getBoolean('blurNSFW') ?? true,
   dimReadPosts: storage.getBoolean('dimReadPosts') ?? true,
   hideReadPosts: storage.getBoolean('hideReadPosts') ?? false,
+  showNewComments: storage.getBoolean('showNewComments') ?? true,
 
   setTheme: (theme) => {
     storage.set('theme', theme);
@@ -101,6 +104,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     storage.set('hideReadPosts', hideReadPosts);
     set({ hideReadPosts });
   },
+  setShowNewComments: (showNewComments) => {
+    storage.set('showNewComments', showNewComments);
+    set({ showNewComments });
+  },
 }));
 
 // ---- Per-feed layout overrides (standalone MMKV functions, not reactive state) ----
@@ -113,4 +120,43 @@ export function getLayoutForFeed(feedKey: string): FeedLayout {
 
 export function setLayoutForFeed(feedKey: string, layout: FeedLayout): void {
   storage.set(`layout:${feedKey}`, layout);
+}
+
+// ---- Per-feed sort persistence ----
+
+export function getSortForFeed(feedKey: string): string {
+  return storage.getString(`sort:${feedKey}`) ?? 'best';
+}
+
+export function setSortForFeed(feedKey: string, sort: string): void {
+  storage.set(`sort:${feedKey}`, sort);
+}
+
+// ---- Comment draft storage ----
+
+export function getDraft(parentId: string): string | undefined {
+  return storage.getString(`draft:comment:${parentId}`);
+}
+
+export function saveDraft(parentId: string, text: string): void {
+  storage.set(`draft:comment:${parentId}`, text);
+}
+
+export function clearDraft(parentId: string): void {
+  storage.set(`draft:comment:${parentId}`, '');
+}
+
+// ---- Tutorial tip dismissal ----
+
+export function getDismissedTips(): string[] {
+  const raw = storage.getString('dismissed_tips');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+export function dismissTip(tipId: string): void {
+  const current = getDismissedTips();
+  if (!current.includes(tipId)) {
+    storage.set('dismissed_tips', JSON.stringify([...current, tipId]));
+  }
 }

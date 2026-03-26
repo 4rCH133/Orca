@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFeed, getSubredditFeed, votePost, savePost, FeedSort, PostData, RedditListing } from '@/api/reddit';
 import { upsertLikedPost, removeLikedPost, upsertSavedPost, removeSavedPost, upsertDownvotedPost, removeDownvotedPost } from '@/db/likes';
+import { useToastStore } from '@/store/toastStore';
 import { MOCK_MODE, mockPosts } from '@/dev';
 
 function mockListing(): RedditListing {
@@ -112,6 +113,7 @@ export function useVotePost() {
       }
     },
     onError: () => {
+      useToastStore.getState().show('Vote failed — check your connection');
       qc.invalidateQueries({ queryKey: ['feed'] });
     },
   });
@@ -138,6 +140,7 @@ export function useSavePost() {
       }
     },
     onError: () => {
+      useToastStore.getState().show('Vote failed — check your connection');
       qc.invalidateQueries({ queryKey: ['feed'] });
     },
     onSuccess: () => {
