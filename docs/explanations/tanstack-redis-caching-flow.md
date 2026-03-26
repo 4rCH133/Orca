@@ -67,15 +67,19 @@ Upstash enforces TTL expiry automatically server-side. No manual cleanup require
 
 Each endpoint has a deterministic cache key so the same request always maps to same cached value. Page-2+ requests include the `after` cursor so each page is cached independently.
 
-| Endpoint           | Cache Key Pattern           | Redis TTL | TanStack staleTime |
-| ------------------ | --------------------------- | --------- | ------------------ |
-| Home feed          | `feed:best:start`           | 120s      | 120s               |
-| Home feed (page 2) | `feed:best:t3_abc123`       | 120s      | —                  |
-| Subreddit feed     | `sub:programming:hot:start` | 120s      | 120s               |
-| Post detail        | `post:abc123`               | 300s      | —                  |
-| Subreddit info     | `subinfo:programming`       | 600s      | —                  |
+| Endpoint           | Cache Key Pattern           | Redis TTL | TanStack staleTime | Notes                                                                                                                                                                           |
+| ------------------ | --------------------------- | --------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home feed          | `feed:best:start`           | 120s ⚠️   | 120s (whole query) | Key is shared across all users — a different user's personalized feed can be returned on a cache hit. Should be scoped per username or removed from Redis entirely.             |
+| Home feed (page 2) | `feed:best:t3_abc123`       | 120s ⚠️   | 120s (whole query) | Pages 2+ are part of the same `useInfiniteQuery` — staleTime governs all pages as a unit, not individually. Same Redis personalization problem as page 1.                       |
+| Subreddit feed     | `sub:programming:hot:start` | 120s      | 120s               | Non-personalized — cross-user sharing is correct.                                                                                                                               |
+| Post detail        | `post:abc123`               | 300s      | 300s               | Non-personalized — cross-user sharing is correct. TTL parity issue applies here too — both expire together, so Redis only helps other users, not the same user's re-navigation. |
+| Subreddit info     | `subinfo:programming`       | 600s      | 600s               | Non-personalized — cross-user sharing is correct. Same TTL parity note as above.                                                                                                |
 
 ---
+
+    NOTE: ⚠️ Indicating Home Feeds should not be cached in Redis as they are tailored to each individual user, and Redis is for impersonal cross-user data caching
+
+    NOTE: We want to test staggering the TTL values between Redis and Tanstack in simulation or against mock API, get metrics, determine best solution, but matching TTLs should be best gambit.
 
 ## Full Request Decision Tree
 
