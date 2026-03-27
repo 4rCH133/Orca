@@ -89,7 +89,9 @@ export async function withCache<T>(
 
 export const CacheKeys = {
   feed: (sort: string, after?: string) => `feed:${sort}:${after ?? 'start'}`,
-  subreddit: (sub: string, sort: string) => `sub:${sub}:${sort}`,
+  subreddit: (sub: string, sort: string, after?: string) =>
+    `sub:${sub}:${sort}:${after ?? 'start'}`,
+
   post: (id: string) => `post:${id}`,
   subredditInfo: (sub: string) => `subinfo:${sub}`,
   userSaved: (username: string) => `saved:${username}`,
