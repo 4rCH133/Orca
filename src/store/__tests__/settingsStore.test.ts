@@ -1,4 +1,4 @@
-import { useSettingsStore, getLayoutForFeed, setLayoutForFeed, getDraft, saveDraft, clearDraft, getDismissedTips, dismissTip, getSortForFeed, setSortForFeed } from '../settingsStore';
+import { useSettingsStore, getLayoutForFeed, setLayoutForFeed, getDraft, saveDraft, clearDraft, getDismissedTips, dismissTip, getSortForFeed, setSortForFeed, getRecentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } from '../settingsStore';
 
 describe('settingsStore', () => {
   beforeEach(() => {
@@ -115,5 +115,58 @@ describe('sort persistence', () => {
     setSortForFeed('space', 'top');
     expect(getSortForFeed('home')).toBe('hot');
     expect(getSortForFeed('space')).toBe('top');
+  });
+});
+
+describe('recent searches', () => {
+  beforeEach(() => clearRecentSearches());
+
+  it('returns empty array initially', () => {
+    expect(getRecentSearches()).toEqual([]);
+  });
+
+  it('adds a search term', () => {
+    addRecentSearch('react');
+    expect(getRecentSearches()).toContain('react');
+  });
+
+  it('most recent search is first', () => {
+    addRecentSearch('react');
+    addRecentSearch('python');
+    expect(getRecentSearches()[0]).toBe('python');
+  });
+
+  it('duplicate moves to front without duplicating', () => {
+    addRecentSearch('A');
+    addRecentSearch('B');
+    addRecentSearch('A');
+    const searches = getRecentSearches();
+    expect(searches[0]).toBe('A');
+    expect(searches.filter((s: string) => s === 'A')).toHaveLength(1);
+  });
+
+  it('caps at 20 entries', () => {
+    for (let i = 0; i < 25; i++) addRecentSearch(`term${i}`);
+    expect(getRecentSearches()).toHaveLength(20);
+  });
+
+  it('removeRecentSearch removes a specific term', () => {
+    addRecentSearch('react');
+    addRecentSearch('python');
+    removeRecentSearch('react');
+    expect(getRecentSearches()).not.toContain('react');
+    expect(getRecentSearches()).toContain('python');
+  });
+
+  it('clearRecentSearches empties the list', () => {
+    addRecentSearch('react');
+    clearRecentSearches();
+    expect(getRecentSearches()).toEqual([]);
+  });
+
+  it('empty string is not added', () => {
+    addRecentSearch('');
+    addRecentSearch('  ');
+    expect(getRecentSearches()).toEqual([]);
   });
 });

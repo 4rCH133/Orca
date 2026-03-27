@@ -122,6 +122,31 @@ export function setLayoutForFeed(feedKey: string, layout: FeedLayout): void {
   storage.set(`layout:${feedKey}`, layout);
 }
 
+// ---- Recent searches ----
+
+export function getRecentSearches(): string[] {
+  const raw = storage.getString('recent_searches');
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+export function addRecentSearch(query: string): void {
+  if (!query.trim()) return;
+  const current = getRecentSearches().filter((s) => s !== query);
+  current.unshift(query);
+  if (current.length > 20) current.pop();
+  storage.set('recent_searches', JSON.stringify(current));
+}
+
+export function removeRecentSearch(query: string): void {
+  const current = getRecentSearches().filter((s) => s !== query);
+  storage.set('recent_searches', JSON.stringify(current));
+}
+
+export function clearRecentSearches(): void {
+  storage.set('recent_searches', '[]');
+}
+
 // ---- Per-feed sort persistence ----
 
 export function getSortForFeed(feedKey: string): string {

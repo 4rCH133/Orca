@@ -18,6 +18,17 @@ export interface LocalPost {
   liked_at?: number;
   saved_at?: number;
   flair: string | null;
+  body_snippet?: string | null;
+  folder_id?: string | null;
+  highlighted_title?: string;
+}
+
+export interface AdvancedSearchOptions {
+  subreddit?: string;
+  dateFrom?: number; // unix timestamp
+  sortBy?: 'rank' | 'score' | 'date';
+  limit?: number;
+  offset?: number;
 }
 
 function postDataToLocal(post: PostData): Omit<LocalPost, 'liked_at' | 'saved_at'> {
@@ -33,7 +44,13 @@ function postDataToLocal(post: PostData): Omit<LocalPost, 'liked_at' | 'saved_at
     created_utc: post.created_utc,
     permalink: post.permalink,
     flair: post.link_flair_text ?? null,
+    body_snippet: post.selftext?.slice(0, 500) ?? null,
   };
+}
+
+/** Sanitize FTS5 query — strip special operators that could cause syntax errors */
+function sanitizeFtsQuery(query: string): string {
+  return query.replace(/[*"()]/g, '').trim();
 }
 
 // ---- Liked Posts ----
@@ -44,9 +61,9 @@ export async function upsertLikedPost(post: PostData) {
   const p = postDataToLocal(post);
   await db.runAsync(
     `INSERT OR REPLACE INTO liked_posts
-       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair]
+       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair, body_snippet)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair, p.body_snippet]
   );
 }
 
@@ -86,9 +103,9 @@ export async function upsertSavedPost(post: PostData) {
   const p = postDataToLocal(post);
   await db.runAsync(
     `INSERT OR REPLACE INTO saved_posts
-       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair]
+       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair, body_snippet)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair, p.body_snippet]
   );
 }
 
@@ -128,9 +145,9 @@ export async function upsertDownvotedPost(post: PostData) {
   const p = postDataToLocal(post);
   await db.runAsync(
     `INSERT OR REPLACE INTO downvoted_posts
-       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair]
+       (id, title, author, subreddit, url, thumbnail, score, num_comments, created_utc, permalink, flair, body_snippet)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [p.id, p.title, p.author, p.subreddit, p.url, p.thumbnail, p.score, p.num_comments, p.created_utc, p.permalink, p.flair, p.body_snippet]
   );
 }
 
@@ -160,4 +177,74 @@ export async function getDownvotedPosts(limit = 50, offset = 0): Promise<LocalPo
     'SELECT * FROM downvoted_posts ORDER BY downvoted_at DESC LIMIT ? OFFSET ?',
     [limit, offset]
   );
+}
+
+// ---- Advanced Search (with filters, sort, highlighting) ----
+
+export async function searchLikedPostsAdvanced(
+  query: string,
+  options: AdvancedSearchOptions = {},
+): Promise<LocalPost[]> {
+  if (!isNative) return [];
+  const { subreddit, dateFrom, sortBy = 'rank', limit = 50, offset = 0 } = options;
+
+  if (!query.trim()) {
+    return getLikedPostsFiltered(subreddit, dateFrom, sortBy, limit, offset);
+  }
+
+  const db = await getDb();
+  const sanitized = sanitizeFtsQuery(query);
+  if (!sanitized) return getLikedPosts(limit, offset);
+
+  const params: any[] = [`${sanitized}*`];
+  let whereExtra = '';
+  if (subreddit) { whereExtra += ' AND lp.subreddit = ?'; params.push(subreddit); }
+  if (dateFrom) { whereExtra += ' AND lp.liked_at >= ?'; params.push(dateFrom); }
+
+  const orderBy = sortBy === 'score' ? 'lp.score DESC' : sortBy === 'date' ? 'lp.liked_at DESC' : 'rank';
+
+  params.push(limit, offset);
+  return db.getAllAsync<LocalPost>(
+    `SELECT lp.*, highlight(liked_posts_fts, 1, '<mark>', '</mark>') as highlighted_title
+     FROM liked_posts lp
+     JOIN liked_posts_fts fts ON lp.rowid = fts.rowid
+     WHERE liked_posts_fts MATCH ?${whereExtra}
+     ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    params,
+  );
+}
+
+async function getLikedPostsFiltered(
+  subreddit?: string, dateFrom?: number, sortBy = 'date', limit = 50, offset = 0,
+): Promise<LocalPost[]> {
+  if (!isNative) return [];
+  const db = await getDb();
+  const params: any[] = [];
+  let where = '1=1';
+  if (subreddit) { where += ' AND subreddit = ?'; params.push(subreddit); }
+  if (dateFrom) { where += ' AND liked_at >= ?'; params.push(dateFrom); }
+  const orderBy = sortBy === 'score' ? 'score DESC' : 'liked_at DESC';
+  params.push(limit, offset);
+  return db.getAllAsync<LocalPost>(
+    `SELECT * FROM liked_posts WHERE ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    params,
+  );
+}
+
+// ---- Utility Queries ----
+
+export async function getDistinctSubreddits(table: 'liked_posts' | 'saved_posts' | 'downvoted_posts' = 'liked_posts'): Promise<string[]> {
+  if (!isNative) return [];
+  const db = await getDb();
+  const rows = await db.getAllAsync<{ subreddit: string }>(
+    `SELECT DISTINCT subreddit FROM ${table} ORDER BY subreddit`,
+  );
+  return rows.map((r: { subreddit: string }) => r.subreddit);
+}
+
+export async function getPostCount(table: 'liked_posts' | 'saved_posts' | 'downvoted_posts' = 'liked_posts'): Promise<number> {
+  if (!isNative) return 0;
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ count: number }>(`SELECT COUNT(*) as count FROM ${table}`);
+  return row?.count ?? 0;
 }
